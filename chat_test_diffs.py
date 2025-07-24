@@ -9,15 +9,18 @@ R1(t) = free p75
 R2(t) = free TrkB
 C1(t) = proBDNF-p75 complex
 C2(t) = BDNF-TrkB complex
-ksP = synthesis rate of proBDNF
-k_cleave = rate of proBDNF cleavage into BDNF
-k_on1 = rate of proBDNF to bind to p75
-k_off1 = rate of proBDNF to unbind from the proBDNF-p75
-k_degP = rate of proBDNF degradation
-k_on2 = rate of BDNF to bind to TrkB
-k_off2 = rate of BDNF to unbind from the BDNF-TrkB complex
-k_degB = rate of BDNF degradation
-
+ksP = synthesis rate of proBDNF moles/time
+k_cleave = rate of proBDNF cleavage into BDNF (frequency) 1/time
+k_on1 = rate of proBDNF to bind to p75 1/(moles*time)
+k_off1 = rate of proBDNF to unbind from the proBDNF-p75 1/time
+k_degP = rate of proBDNF degradation 1/time
+k_on2 = rate of BDNF to bind to TrkB 1/(moles*time)
+k_off2 = rate of BDNF to unbind from the BDNF-TrkB complex 1/time
+k_degB = rate of BDNF degradation 1/time
+k_degR1 = rate of p75 degradation 1/time
+k_degR2 = rate of TrkB degradation 1/time
+k_int1 = rate of proBDNF-p75 complex internalization 1/time
+k_int2 = rate of BDNF-TrkB complex internalization 1/time
 """
 
 # Define the ODE system
