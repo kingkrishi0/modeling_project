@@ -17,6 +17,7 @@ k_degP = rate of proBDNF degradation
 k_on2 = rate of BDNF to bind to TrkB
 k_off2 = rate of BDNF to unbind from the BDNF-TrkB complex
 k_degB = rate of BDNF degradation
+k_degR1 = rate of p75 degradation
 
 """
 
