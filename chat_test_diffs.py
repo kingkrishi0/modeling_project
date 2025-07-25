@@ -35,6 +35,34 @@ aff_p75_pro = 1.0  # Affinity of proBDNF for p75, assumed constant for simplicit
 aff_p75_B = 1.0  # Affinity of BDNF for p75, assumed constant for simplicity
 aff_TrkB_pro = 1.0  # Affinity of proBDNF for TrkB, assumed constant for simplicity
 aff_TrkB_B = 1.0  # Affinity of BDNF for TrkB, assumed constant for simplicity
+
+# Parameter Order
+# ksP
+# k_cleave
+# k_p75_pro_on
+# k_p75_pro_off
+# k_degP
+# k_TrkB_pro_on
+# k_TrkB_pro_off
+# k_TrkB_B_on
+# k_TrkB_B_off
+# k_degB
+# k_p75_B_on
+# k_p75_B_off
+# k_degR1
+# k_degR2
+# k_int_p75_pro
+# k_int_p75_B
+# k_int_TrkB_B
+# k_int_TrkB_pro
+# aff_p75_pro
+# aff_p75_B
+# aff_TrkB_pro
+# aff_TrkB_B
+# k_deg_tPA
+# ks_tPA
+# ks_p75
+# ks_TrkB
 """
 
 # Define the ODE system
@@ -43,7 +71,7 @@ def dYdt(t, y, params):
     ksP, k_cleave, k_p75_pro_on, k_p75_pro_off, k_degP, k_TrkB_pro_on, k_TrkB_pro_off, \
     k_TrkB_B_on, k_TrkB_B_off, k_degB, k_p75_B_on, k_p75_B_off, k_degR1, k_degR2, \
     k_int_p75_pro, k_int_p75_B, k_int_TrkB_B, k_int_TrkB_pro, aff_p75_pro, \
-    aff_p75_B, aff_TrkB_pro, aff_TrkB_B, ks_p75, ks_TrkB, k_deg_tPA, ks_tPA = params
+    aff_p75_B, aff_TrkB_pro, aff_TrkB_B, k_deg_tPA, ks_tPA, ks_p75, ks_TrkB= params
 
     dP = ksP - k_cleave * tPA * P - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degP * P
     
@@ -61,7 +89,7 @@ def dYdt(t, y, params):
     
     dTrkB_pro = k_TrkB_pro_on * aff_TrkB_pro * P * TrkB - k_TrkB_pro_off * TrkB_pro - k_int_TrkB_pro * TrkB_pro
     
-    dtPA = ks_tPA-k_deg_tPA #-k_cleave * tPA * P + k_TrkB_B_on * aff_TrkB_B * B * TrkB
+    dtPA = ks_tPA - k_cleave * tPA * P#-k_cleave * tPA * P + k_TrkB_B_on * aff_TrkB_B * B * TrkB
 
     return [dP, dB, dp75, dTrkB, dp75_pro, dp75_B, dTrkB_B, dTrkB_pro, dtPA]
 
@@ -75,7 +103,7 @@ y0 = [
     0.0,   # p75_B: BDNF-p75 complex (none at t=0)
     0.0,   # TrkB_B: BDNF-TrkB complex (none at t=0)
     0.0,   # TrkB_pro: proBDNF-TrkB complex (none at t=0)
-    2.0     # tPA: tPA enzyme (moderate, present to allow cleavage)
+    1.0     # tPA: tPA enzyme (moderate, present to allow cleavage)
 ]
 
 # Parameters
@@ -102,18 +130,16 @@ params = [
     0.1,    # aff_p75_B (affinity of BDNF for p75)
     0.1,    # aff_TrkB_pro (affinity of proBDNF for TrkB)
     0.9,    # aff_TrkB_B (affinity of BDNF for TrkB)
-    0.18,   #k_deg_tPA (degradation rate of tPA) - slow degradation
-    0.1,    # ks_tPA (synthesis rate of tPA)
+    0.1,    #k_deg_tPA (degradation rate of tPA) - slow degradation
+    0.7,    # ks_tPA (synthesis rate of tPA)
     # NEW PARAMETERS FOR BIOLOGICAL ACCURACY
-    0.1,   # ks_p75 (synthesis rate of p75) - small value to maintain baseline
-    0.1,   # ks_TrkB (synthesis rate of TrkB) - small value to maintain baseline
-    #0.1,    # ks_tPA (synthesis rate of tPA) - constant production
-    #0.01    # k_deg_tPA (degradation rate of tPA) - slow degradation
+    0.1,    # ks_p75 (synthesis rate of p75) - small value to maintain baseline
+    0.1,    # ks_TrkB (synthesis rate of TrkB) - small value to maintain baseline
 ]
 
 # Time span
 t_span = (0, 100)
-t_eval = np.linspace(*t_span, 500)
+t_eval = np.linspace(*t_span, 10000)
 
 # Solve
 solution = solve_ivp(dYdt, t_span, y0, args=(params,), t_eval=t_eval)
