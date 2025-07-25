@@ -64,41 +64,56 @@ aff_TrkB_B = 1.0  # Affinity of BDNF for TrkB, assumed constant for simplicity
 # ks_p75
 # ks_TrkB
 """
-
+class ODEModel:
+    def __init__(self, params, y0, t_span):
+        self.params = params
+        self.y0 = y0
+        self.t_span = t_span
+        self.solution = None
 # Define the ODE system
-def dYdt(t, y, params):
-    P, B, p75, TrkB, p75_pro, p75_B, TrkB_B, TrkB_pro, tPA = y
-    ksP, k_cleave, k_p75_pro_on, k_p75_pro_off, k_degP, k_TrkB_pro_on, k_TrkB_pro_off, \
-    k_TrkB_B_on, k_TrkB_B_off, k_degB, k_p75_B_on, k_p75_B_off, k_degR1, k_degR2, \
-    k_int_p75_pro, k_int_p75_B, k_int_TrkB_B, k_int_TrkB_pro, aff_p75_pro, \
-    aff_p75_B, aff_TrkB_pro, aff_TrkB_B, k_deg_tPA, ks_tPA, ks_p75, ks_TrkB= params
+    def dYdt(self, t, y):
+        P, B, p75, TrkB, p75_pro, p75_B, TrkB_B, TrkB_pro, tPA = y
+        ksP, k_cleave, k_p75_pro_on, k_p75_pro_off, k_degP, k_TrkB_pro_on, k_TrkB_pro_off, \
+        k_TrkB_B_on, k_TrkB_B_off, k_degB, k_p75_B_on, k_p75_B_off, k_degR1, k_degR2, \
+        k_int_p75_pro, k_int_p75_B, k_int_TrkB_B, k_int_TrkB_pro, aff_p75_pro, \
+        aff_p75_B, aff_TrkB_pro, aff_TrkB_B, k_deg_tPA, ks_tPA, ks_p75, ks_TrkB= self.params
 
-    dP = ksP - k_cleave * tPA * P - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degP * P
-    
-    dB = k_cleave * tPA * P - k_TrkB_B_on * aff_TrkB_B * B * TrkB + k_TrkB_B_off * TrkB_B - k_p75_B_on * aff_p75_B * B * p75 + k_p75_B_off * p75_B - k_degB * B
-    
-    dp75 = ks_p75 - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_p75_B_on * aff_p75_B * B * p75 + k_p75_B_off * p75_B - k_degR1 * p75
-    
-    dTrkB = ks_TrkB - k_TrkB_B_on * aff_TrkB_B * B * TrkB + k_TrkB_B_off * TrkB_B - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degR2 * TrkB
-    
-    dp75_pro = k_p75_pro_on * aff_p75_pro * P * p75 - k_p75_pro_off * p75_pro - k_int_p75_pro * p75_pro
-    
-    dp75_B = k_p75_B_on * aff_p75_B * B * p75 - k_p75_B_off * p75_B - k_int_p75_B * p75_B
-    
-    dTrkB_B = k_TrkB_B_on * aff_TrkB_B * B * TrkB - k_TrkB_B_off * TrkB_B - k_int_TrkB_B * TrkB_B
-    
-    dTrkB_pro = k_TrkB_pro_on * aff_TrkB_pro * P * TrkB - k_TrkB_pro_off * TrkB_pro - k_int_TrkB_pro * TrkB_pro
-    
-    dtPA = ks_tPA - k_cleave * tPA * P#-k_cleave * tPA * P + k_TrkB_B_on * aff_TrkB_B * B * TrkB
+        activity_level = 1.0 + 0.5 * np.sin(2 * np.pi * t / 20)
+        #activity_level = np.random.uniform(0.5, 1.5)
 
-    return [dP, dB, dp75, dTrkB, dp75_pro, dp75_B, dTrkB_B, dTrkB_pro, dtPA]
+        ksP_variable = ksP * activity_level
+
+        dP = ksP_variable - k_cleave * tPA * P - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degP * P
+        
+        dB = k_cleave * tPA * P - k_TrkB_B_on * aff_TrkB_B * B * TrkB + k_TrkB_B_off * TrkB_B - k_p75_B_on * aff_p75_B * B * p75 + k_p75_B_off * p75_B - k_degB * B
+        
+        dp75 = ks_p75 - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_p75_B_on * aff_p75_B * B * p75 + k_p75_B_off * p75_B - k_degR1 * p75
+        
+        dTrkB = ks_TrkB - k_TrkB_B_on * aff_TrkB_B * B * TrkB + k_TrkB_B_off * TrkB_B - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degR2 * TrkB
+        
+        dp75_pro = k_p75_pro_on * aff_p75_pro * P * p75 - k_p75_pro_off * p75_pro - k_int_p75_pro * p75_pro
+        
+        dp75_B = k_p75_B_on * aff_p75_B * B * p75 - k_p75_B_off * p75_B - k_int_p75_B * p75_B
+        
+        dTrkB_B = k_TrkB_B_on * aff_TrkB_B * B * TrkB - k_TrkB_B_off * TrkB_B - k_int_TrkB_B * TrkB_B
+        
+        dTrkB_pro = k_TrkB_pro_on * aff_TrkB_pro * P * TrkB - k_TrkB_pro_off * TrkB_pro - k_int_TrkB_pro * TrkB_pro
+        
+        dtPA = ks_tPA * activity_level - k_deg_tPA * tPA#-k_cleave * tPA * P + k_TrkB_B_on * aff_TrkB_B * B * TrkB
+
+        return [dP, dB, dp75, dTrkB, dp75_pro, dp75_B, dTrkB_B, dTrkB_pro, dtPA]
+    
+    def solve(self):
+        from scipy.integrate import solve_ivp
+        self.solution = solve_ivp(self.dYdt, self.t_span, self.y0, t_eval=np.linspace(*self.t_span, 1000))
+        return self.solution
 
 # Initial concentrations
 y0 = [
     0.2,   # P: proBDNF (low initial, newly synthesized)
     0.0,   # B: BDNF (none at t=0, must be cleaved from proBDNF)
-    1.0,   # p75: free p75 receptor (abundant)
-    1.0,   # TrkB: free TrkB receptor (abundant)
+    0.1,   # p75: free p75 receptor (abundant)
+    0.1,   # TrkB: free TrkB receptor (abundant)
     0.0,   # p75_pro: proBDNF-p75 complex (none at t=0)
     0.0,   # p75_B: BDNF-p75 complex (none at t=0)
     0.0,   # TrkB_B: BDNF-TrkB complex (none at t=0)
@@ -109,19 +124,19 @@ y0 = [
 # Parameters
 params = [
     0.75,   # ksP (synthesis rate of proBDNF)
-    0.6,    # k_cleave (rate of proBDNF cleavage into BDNF)
+    0.5,    # k_cleave (rate of proBDNF cleavage into BDNF)
     1.0,    # k_p75_pro_on (proBDNF binding to p75)
     0.1,    # k_p75_pro_off (proBDNF unbinding from p75)
-    0.01,   # k_degP (proBDNF degradation)
+    0.002,   # k_degP (proBDNF degradation min)
     0.5,    # k_TrkB_pro_on (proBDNF binding to TrkB)
     0.05,   # k_TrkB_pro_off (proBDNF unbinding from TrkB)
     1.0,    # k_TrkB_B_on (BDNF binding to TrkB)
-    0.1,    # k_TrkB_B_off (BDNF unbinding from TrkB)
-    0.36,    # k_degB (BDNF degradation)
+    0.01,    # k_TrkB_B_off (BDNF unbinding from TrkB)
+    0.069,    # k_degB (BDNF degradation)
     0.8,    # k_p75_B_on (BDNF binding to p75)
     0.08,   # k_p75_B_off (BDNF unbinding from p75)
-    0.01,   # k_degR1 (p75 degradation)
-    0.01,   # k_degR2 (TrkB degradation)
+    0.139,   # k_degR1 (p75 degradation)
+    0.005,   # k_degR2 (TrkB degradation)
     0.1,    # k_int_p75_pro (proBDNF-p75 internalization)
     0.1,    # k_int_p75_B (BDNF-p75 internalization)
     0.1,    # k_int_TrkB_B (BDNF-TrkB internalization)
@@ -130,25 +145,55 @@ params = [
     0.1,    # aff_p75_B (affinity of BDNF for p75)
     0.1,    # aff_TrkB_pro (affinity of proBDNF for TrkB)
     0.9,    # aff_TrkB_B (affinity of BDNF for TrkB)
-    0.1,    #k_deg_tPA (degradation rate of tPA) - slow degradation
-    0.7,    # ks_tPA (synthesis rate of tPA)
+    0.4,    #k_deg_tPA (degradation rate of tPA) - slow degradation
+    0.3,    # ks_tPA (synthesis rate of tPA)
     # NEW PARAMETERS FOR BIOLOGICAL ACCURACY
     0.1,    # ks_p75 (synthesis rate of p75) - small value to maintain baseline
     0.1,    # ks_TrkB (synthesis rate of TrkB) - small value to maintain baseline
 ]
 
+
+ODE_model = ODEModel(params, y0, (0, 100))
 # Time span
-t_span = (0, 100)
-t_eval = np.linspace(*t_span, 10000)
+t_span = (0, 50)
+t_eval = np.linspace(*t_span, 1000)
 
 # Solve
-solution = solve_ivp(dYdt, t_span, y0, args=(params,), t_eval=t_eval)
+solution = ODE_model.solve()
 
 # Plot
 # P, B, p75, TrkB, p75_pro, p75_B, TrkB_B, TrkB_pro, tPA
 plt.figure(figsize=(10,6))
+colors = plt.cm.tab10(np.arange(9))  # 9 variables, tab10 colormap
 for i, label in enumerate(['proBDNF', 'BDNF', 'p75', 'TrkB', 'p75-proBDNF', 'p75-BDNF', 'TrkB_BDNF', 'TrkB_proBDNF', 'tPA']):
-    plt.plot(solution.t, solution.y[i], label=label)
+    plt.plot(solution.t, solution.y[i], label=label, color=colors[i])
+    # Find local maxima and minima
+    from scipy.signal import argrelextrema
+    y = solution.y[i]
+    t = solution.t
+    max_idx = argrelextrema(y, np.greater)[0]
+    min_idx = argrelextrema(y, np.less)[0]
+    plt.plot(t[max_idx], y[max_idx], '*', color=colors[i], markersize=8)  # Stars for maxima
+    plt.plot(t[min_idx], y[min_idx], '*', color=colors[i], markersize=8)  # Stars for minima
+plt.legend()
+plt.xlabel('Time')
+plt.ylabel('Concentration')
+plt.title('Dynamics of proBDNF/BDNF and Receptors')
+plt.grid()
+plt.show()
+
+plt.figure(figsize=(10,6))
+colors = plt.cm.tab10(np.arange(2))  # 2 variables
+for i, label in enumerate(['proBDNF', 'BDNF']):
+    plt.plot(solution.t, solution.y[i], label=label, color=colors[i])
+    # Find local maxima and minima
+    from scipy.signal import argrelextrema
+    y = solution.y[i]
+    t = solution.t
+    max_idx = argrelextrema(y, np.greater)[0]
+    min_idx = argrelextrema(y, np.less)[0]
+    plt.plot(t[max_idx], y[max_idx], '*', color=colors[i], markersize=8)
+    plt.plot(t[min_idx], y[min_idx], '*', color=colors[i], markersize=8)
 plt.legend()
 plt.xlabel('Time')
 plt.ylabel('Concentration')
