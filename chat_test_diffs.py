@@ -73,7 +73,11 @@ def dYdt(t, y, params):
     k_int_p75_pro, k_int_p75_B, k_int_TrkB_B, k_int_TrkB_pro, aff_p75_pro, \
     aff_p75_B, aff_TrkB_pro, aff_TrkB_B, k_deg_tPA, ks_tPA, ks_p75, ks_TrkB= params
 
-    dP = ksP - k_cleave * tPA * P - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degP * P
+    activity_level = 1.0 + 0.5 * np.sin(2 * np.pi * t / 20)
+
+    ksP_variable = ksP * activity_level
+
+    dP = ksP_variable - k_cleave * tPA * P - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degP * P
     
     dB = k_cleave * tPA * P - k_TrkB_B_on * aff_TrkB_B * B * TrkB + k_TrkB_B_off * TrkB_B - k_p75_B_on * aff_p75_B * B * p75 + k_p75_B_off * p75_B - k_degB * B
     
@@ -89,7 +93,7 @@ def dYdt(t, y, params):
     
     dTrkB_pro = k_TrkB_pro_on * aff_TrkB_pro * P * TrkB - k_TrkB_pro_off * TrkB_pro - k_int_TrkB_pro * TrkB_pro
     
-    dtPA = ks_tPA - k_cleave * tPA * P#-k_cleave * tPA * P + k_TrkB_B_on * aff_TrkB_B * B * TrkB
+    dtPA = ks_tPA + 0.1 * TrkB_B - k_deg_tPA * tPA#-k_cleave * tPA * P + k_TrkB_B_on * aff_TrkB_B * B * TrkB
 
     return [dP, dB, dp75, dTrkB, dp75_pro, dp75_B, dTrkB_B, dTrkB_pro, dtPA]
 
@@ -130,8 +134,8 @@ params = [
     0.1,    # aff_p75_B (affinity of BDNF for p75)
     0.1,    # aff_TrkB_pro (affinity of proBDNF for TrkB)
     0.9,    # aff_TrkB_B (affinity of BDNF for TrkB)
-    0.1,    #k_deg_tPA (degradation rate of tPA) - slow degradation
-    0.7,    # ks_tPA (synthesis rate of tPA)
+    0.4,    #k_deg_tPA (degradation rate of tPA) - slow degradation
+    0.5,    # ks_tPA (synthesis rate of tPA)
     # NEW PARAMETERS FOR BIOLOGICAL ACCURACY
     0.1,    # ks_p75 (synthesis rate of p75) - small value to maintain baseline
     0.1,    # ks_TrkB (synthesis rate of TrkB) - small value to maintain baseline
