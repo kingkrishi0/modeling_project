@@ -74,9 +74,6 @@ class ODEModel:
     def hill_function(self, C, KD, n):
         return C**n / (KD**n + C**n)
     
-    def inhibitory_hill_function(self, C, KD, n):
-        return 1 - (C**n) / (KD**n + C**n)
-    
     def dYdt(self, t, y):
         P, B, p75, TrkB, p75_pro, p75_B, TrkB_B, TrkB_pro, tPA = y
         ksP, k_cleave, k_p75_pro_on, k_p75_pro_off, k_degP, k_TrkB_pro_on, k_TrkB_pro_off, \
@@ -84,9 +81,20 @@ class ODEModel:
         k_int_p75_pro, k_int_p75_B, k_int_TrkB_B, k_int_TrkB_pro, aff_p75_pro, \
         aff_p75_B, aff_TrkB_pro, aff_TrkB_B, k_deg_tPA, ks_tPA, ks_p75, ks_TrkB= self.params
 
-        activity_level = 1.0 + 2*np.sin(2 * np.pi * t)
-        #activity_level = np.random.uniform(0.5, 1.5)
 
+        burst_duration = 50  # seconds of high activity
+        inter_burst_interval = 100 # seconds between the start of bursts (period of the burst pattern)
+        high_activity_value = 2.0 # The 'level' during a burst
+        low_activity_value = 0.01 # The 'level' during 'no activity' (a small baseline to avoid zero multiplication)
+
+        # Determine if 't' falls within a burst period
+        # The modulo operator (%) helps create a repeating pattern
+        time_within_cycle = t % inter_burst_interval
+
+        if time_within_cycle < burst_duration:
+            activity_level = high_activity_value
+        else:
+            activity_level = low_activity_value
         ksP_variable = ksP * activity_level
 
         dP = ksP_variable - k_cleave * tPA * P - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degP * P
@@ -105,7 +113,7 @@ class ODEModel:
         
         dTrkB_pro = k_TrkB_pro_on * aff_TrkB_pro * P * TrkB - k_TrkB_pro_off * TrkB_pro - k_int_TrkB_pro * TrkB_pro
         
-        dtPA = ks_tPA * activity_level - k_deg_tPA * tPA
+        dtPA = ks_tPA * activity_level - k_deg_tPA * tPA 
 
 
 
@@ -118,8 +126,8 @@ class ODEModel:
             times = np.linspace(t0, tf, num_steps + 1)
             y = np.zeros((len(self.y0), num_steps + 1))
             y[:, 0] = self.y0
-            self.growth_strength_B_history = []
-            self.growth_strength_pro_history = []
+            self.growth_strength_history = []
+            self.apop_strength_history = []
 
             for i in range(num_steps):
                 current_y = y[:, i]
@@ -144,16 +152,17 @@ class ODEModel:
                 KD_p75_B = 0.02 # DISSACIATION CONSTANT FOR P75-BDNF COMPLEX (Change to actual)
                 n_p75_B = 2.0
 
-                growth_strength_B = (self.hill_function(conc_TrkB_B, KD_TrkB_B, n_TrkB_B) + 
+                growth_strength = (self.hill_function(conc_TrkB_B, KD_TrkB_B, n_TrkB_B) + 
                                      self.hill_function(conc_TrkB_pro, KD_TrkB_pro, n_TrkB_pro))/2
                 
-                growth_strength_Pro = (self.hill_function(conc_p75_pro, KD_p75_pro, n_p75_pro) +
+                apop_strength = (self.hill_function(conc_p75_pro, KD_p75_pro, n_p75_pro) +
                                         self.hill_function(conc_p75_B, KD_p75_B, n_p75_B))/2
                 
-                self.growth_strength_B_history.append(growth_strength_B)
-                self.growth_strength_pro_history.append(growth_strength_Pro)
-            self.growth_strength_B_history = np.array(self.growth_strength_B_history)
-            self.growth_strength_pro_history = np.array(self.growth_strength_pro_history)
+                self.growth_strength_history.append(growth_strength)
+                self.apop_strength_history.append(apop_strength)
+            self.growth_strength_history = np.array(self.growth_strength_history)
+            self.apop_strength_history = np.array(self.apop_strength_history)
+
             class Solution:
                 pass
             sol = Solution()
@@ -170,24 +179,15 @@ class ODEModel:
             KD_p75_pro = 0.02
             n_p75_pro = 2.0
 
-            self.growth_strength_B_history = np.array([
+            self.growth_strength_history = np.array([
                 self.hill_function(sol.y[6, i], KD=KD_TrkB_B, n=n_TrkB_B) for i in range(sol.y.shape[1])
             ])
             
-            self.growth_strength_pro_history = np.array([
+            self.apop_strength_history = np.array([
                 self.hill_function(sol.y[4, i], KD=KD_p75_pro, n=n_p75_pro) for i in range(sol.y.shape[1])
             ])
 
         return self.solution
-    
-    """def growth_strength_B(self, conc_B):
-        1 * (self.B)/()
-    
-    def growth_strength_p(self):
-
-    def apop_strength_p(self):
-
-    def apop_strength_B(self):"""
         
 
 # Initial concentrations
@@ -200,7 +200,7 @@ y0 = [
     0.0,   # p75_B: BDNF-p75 complex (none at t=0)
     0.0,   # TrkB_B: BDNF-TrkB complex (none at t=0)
     0.0,   # TrkB_pro: proBDNF-TrkB complex (none at t=0)
-    0.2     # tPA: tPA enzyme (moderate, present to allow cleavage)
+    0.1     # tPA: tPA enzyme (moderate, present to allow cleavage)
 ]
 
 
@@ -209,7 +209,7 @@ y0 = [
 # Parameters
 params = [
     5.0e-3,   # ksP (synthesis rate of proBDNF)
-    0.05,    # k_cleave (rate of proBDNF cleavage into BDNF)
+    0.01,    # k_cleave (rate of proBDNF cleavage into BDNF)
     1.0,    # k_p75_pro_on (proBDNF binding to p75)
     0.9,    # k_p75_pro_off (proBDNF unbinding from p75)
     5.0e-4,   # k_degP (proBDNF degradation )
@@ -230,7 +230,7 @@ params = [
     0.1,    # aff_p75_B (affinity of BDNF for p75)
     0.1,    # aff_TrkB_pro (affinity of proBDNF for TrkB)
     0.9,    # aff_TrkB_B (affinity of BDNF for TrkB)
-    0.0001,    #k_deg_tPA (degradation rate of tPA) - slow degradation
+    0.0011,   #k_deg_tPA (degradation rate of tPA) - slow degradation
     0.0001,    # ks_tPA (synthesis rate of tPA)
     # NEW PARAMETERS FOR BIOLOGICAL ACCURACY
     0.0001,    # ks_p75 (synthesis rate of p75) - small value to maintain baseline
@@ -243,8 +243,6 @@ ODE_model = ODEModel(params, y0, t_span)
 
 t_eval = np.linspace(*t_span, 1000)
 solution = ODE_model.solve(method='scipy', num_steps=1000)
-
-
 
 
 x = []
@@ -373,4 +371,23 @@ plt.xlabel('Time: seconds')
 plt.ylabel('Concentration: micromolar')
 plt.title('trkb and all trkb stuff')
 plt.grid()
+plt.show()
+
+# --- New Plots for Growth and Apoptosis Strengths ---
+plt.figure(figsize=(10,6))
+plt.plot(solution.t, ODE_model.growth_strength_history-ODE_model.apop_strength_history, label='Growth Signal', color='purple')
+plt.xlabel('Time: seconds')
+plt.ylabel('Signal Strength (0-1)')
+plt.title('Overall Growth Signal')
+plt.grid()
+plt.legend()
+plt.show()
+
+plt.figure(figsize=(10,6))
+plt.plot(solution.t, ODE_model.apop_strength_history, label='Apoptosis Signal', color='darkred')
+plt.xlabel('Time: seconds')
+plt.ylabel('Signal Strength (0-1)')
+plt.title('Overall Apoptosis Signal')
+plt.grid()
+plt.legend()
 plt.show()
