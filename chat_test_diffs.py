@@ -70,7 +70,13 @@ class ODEModel:
         self.y0 = y0
         self.t_span = t_span
         self.solution = None
-# Define the ODE system
+
+    def hill_function(self, C, KD, n):
+        return C**n / (KD**n + C**n)
+    
+    def inhibitory_hill_function(self, C, KD, n):
+        return 1 - (C**n) / (KD**n + C**n)
+    
     def dYdt(self, t, y):
         P, B, p75, TrkB, p75_pro, p75_B, TrkB_B, TrkB_pro, tPA = y
         ksP, k_cleave, k_p75_pro_on, k_p75_pro_off, k_degP, k_TrkB_pro_on, k_TrkB_pro_off, \
@@ -78,7 +84,7 @@ class ODEModel:
         k_int_p75_pro, k_int_p75_B, k_int_TrkB_B, k_int_TrkB_pro, aff_p75_pro, \
         aff_p75_B, aff_TrkB_pro, aff_TrkB_B, k_deg_tPA, ks_tPA, ks_p75, ks_TrkB= self.params
 
-        activity_level = 1.0 + 0.5*np.sin(10 * np.pi * t)
+        activity_level = 1.0 + 2*np.sin(2 * np.pi * t)
         #activity_level = np.random.uniform(0.5, 1.5)
 
         ksP_variable = ksP * activity_level
@@ -112,21 +118,67 @@ class ODEModel:
             times = np.linspace(t0, tf, num_steps + 1)
             y = np.zeros((len(self.y0), num_steps + 1))
             y[:, 0] = self.y0
+            self.growth_strength_B_history = []
+            self.growth_strength_pro_history = []
 
             for i in range(num_steps):
-                dydt = self.dYdt(times[i], y[:, i])
-                y[:, i + 1] = y[:, i] + np.array(dydt) * dt
+                current_y = y[:, i]
+                dP, dB, dp75, dTrkB, dp75_pro, dp75_B, dTrkB_B, dTrkB_pro, dtPA = self.dYdt(times[i], current_y)
+                dydt = [dP, dB, dp75, dTrkB, dp75_pro, dp75_B, dTrkB_B, dTrkB_pro, dtPA]
+                y[:, i + 1] = current_y + np.array(dydt) * dt
 
-            # Mimic solve_ivp output for plotting
+                conc_TrkB_B = current_y[6] # concentrations
+                conc_TrkB_pro = current_y[7] # concentrations
+                conc_p75_pro = current_y[4] #concetrations
+                conc_p75_B = current_y[5] # concentrations
+
+                KD_TrkB_B = 0.05 # DISSACIATION CONSTANT FOR BDNF-TRKB COMPLEX (Change to actual)
+                n_TrkB_B = 2.0    
+
+                KD_TrkB_pro = 0.02 # DISSACIATION CONSTANT FOR PROBDNF-TRKB COMPLEX (Change to actual)
+                n_TrkB_pro = 2.0 
+                
+                KD_p75_pro = 0.02 # DISSACIATION CONSTANT FOR P75-PROBDNF COMPLEX (Change to actual)
+                n_p75_pro = 2.0 
+
+                KD_p75_B = 0.02 # DISSACIATION CONSTANT FOR P75-BDNF COMPLEX (Change to actual)
+                n_p75_B = 2.0
+
+                growth_strength_B = (self.hill_function(conc_TrkB_B, KD_TrkB_B, n_TrkB_B) + 
+                                     self.hill_function(conc_TrkB_pro, KD_TrkB_pro, n_TrkB_pro))/2
+                
+                growth_strength_Pro = (self.hill_function(conc_p75_pro, KD_p75_pro, n_p75_pro) +
+                                        self.hill_function(conc_p75_B, KD_p75_B, n_p75_B))/2
+                
+                self.growth_strength_B_history.append(growth_strength_B)
+                self.growth_strength_pro_history.append(growth_strength_Pro)
+            self.growth_strength_B_history = np.array(self.growth_strength_B_history)
+            self.growth_strength_pro_history = np.array(self.growth_strength_pro_history)
             class Solution:
                 pass
             sol = Solution()
             sol.t = times
             sol.y = y
-            return sol
+            self.solution = sol
         elif method == 'scipy':
             sol = solve_ivp(self.dYdt, self.t_span, self.y0, method='RK45', t_eval=np.linspace(*self.t_span, num_steps))
-            return sol
+            self.solution = sol
+
+            KD_TrkB_B = 0.05
+            n_TrkB_B = 2.0
+            
+            KD_p75_pro = 0.02
+            n_p75_pro = 2.0
+
+            self.growth_strength_B_history = np.array([
+                self.hill_function(sol.y[6, i], KD=KD_TrkB_B, n=n_TrkB_B) for i in range(sol.y.shape[1])
+            ])
+            
+            self.growth_strength_pro_history = np.array([
+                self.hill_function(sol.y[4, i], KD=KD_p75_pro, n=n_p75_pro) for i in range(sol.y.shape[1])
+            ])
+
+        return self.solution
     
     """def growth_strength_B(self, conc_B):
         1 * (self.B)/()
@@ -161,13 +213,13 @@ params = [
     1.0,    # k_p75_pro_on (proBDNF binding to p75)
     0.9,    # k_p75_pro_off (proBDNF unbinding from p75)
     5.0e-4,   # k_degP (proBDNF degradation )
-    0.3,    # k_TrkB_pro_on (proBDNF binding to TrkB)
-    0.2,   # k_TrkB_pro_off (proBDNF unbinding from TrkB)
+    0.2,    # k_TrkB_pro_on (proBDNF binding to TrkB)
+    0.1,   # k_TrkB_pro_off (proBDNF unbinding from TrkB)
     1.0,    # k_TrkB_B_on (BDNF binding to TrkB)
     0.9,    # k_TrkB_B_off (BDNF unbinding from TrkB)
     0.005,    # k_degB (BDNF degradation)
-    0.5,    # k_p75_B_on (BDNF binding to p75)
-    0.45,   # k_p75_B_off (BDNF unbinding from p75)
+    0.3,    # k_p75_B_on (BDNF binding to p75)
+    0.2,   # k_p75_B_off (BDNF unbinding from p75)
     0.0001,   # k_degR1 (p75 degradation)
     0.00001,   # k_degR2 (TrkB degradation)
     0.0005,    # k_int_p75_pro (proBDNF-p75 internalization)
@@ -190,10 +242,61 @@ t_span = (0, 2000)
 ODE_model = ODEModel(params, y0, t_span)
 
 t_eval = np.linspace(*t_span, 1000)
-
-# Solve
 solution = ODE_model.solve(method='scipy', num_steps=1000)
 
+
+
+
+x = []
+y = []
+for idx, t in enumerate(solution.t):
+    derivatives = ODE_model.dYdt(t, solution.y[:, idx])
+    x.append(solution.y[1][idx])  # dP/dt
+    y.append(derivatives[1])  # dB/dt
+
+plt.figure(figsize=(10, 6))
+plt.scatter(x, y, c=solution.t, cmap='viridis', label='Derivative Trajectory')
+plt.xlabel('BdNF')
+plt.ylabel('dB/dt (BDNF)')
+plt.title('Transition of Derivatives Over Time')
+plt.colorbar(label='Time')
+plt.legend()
+plt.grid()
+plt.show()
+
+x = []
+y = []
+for idx, t in enumerate(solution.t):
+    derivatives = ODE_model.dYdt(t, solution.y[:, idx])
+    x.append(solution.y[0][idx])  # dP/dt
+    y.append(derivatives[0])  # dB/dt
+
+plt.figure(figsize=(10, 6))
+plt.scatter(x, y, c=solution.t, cmap='viridis', label='Derivative Trajectory')
+plt.xlabel('pBdNF')
+plt.ylabel('dP/dt (BDNF)')
+plt.title('Transition of Derivatives Over Time')
+plt.colorbar(label='Time')
+plt.legend()
+plt.grid()
+plt.show()
+
+x = []
+y = []
+for idx, t in enumerate(solution.t):
+    derivatives = ODE_model.dYdt(t, solution.y[:, idx])
+    x.append(derivatives[0])  # dP/dt
+    y.append(derivatives[1])  # dB/dt
+
+plt.figure(figsize=(10, 6))
+plt.scatter(x, y, c=solution.t, cmap='viridis', label='Derivative Trajectory')
+plt.xlabel('dP/dt')
+plt.ylabel('dB/dt (BDNF)')
+plt.title('Transition of Derivatives Over Time')
+plt.colorbar(label='Time')
+plt.legend()
+plt.grid()
+plt.show()
 # Plot
 # P, B, p75, TrkB, p75_pro, p75_B, TrkB_B, TrkB_pro, tPA
 plt.figure(figsize=(10,6))
