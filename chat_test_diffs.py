@@ -82,8 +82,8 @@ class ODEModel:
         aff_p75_B, aff_TrkB_pro, aff_TrkB_B, k_deg_tPA, ks_tPA, ks_p75, ks_TrkB= self.params
 
 
-        burst_duration = 50  # seconds of high activity
-        inter_burst_interval = 100 # seconds between the start of bursts (period of the burst pattern)
+        burst_duration = 500  # seconds of high activity
+        inter_burst_interval = 1000 # seconds between the start of bursts (period of the burst pattern)
         high_activity_value = 2.0 # The 'level' during a burst
         low_activity_value = 0.01 # The 'level' during 'no activity' (a small baseline to avoid zero multiplication)
 
