@@ -1,4 +1,4 @@
-#!/Users/ethan/Documents/Anaconda/anaconda3/envs/rise/bin/python3.12
+#!/Users/ethan/Documents/Anaconda/anaconda3/envs/rise_py311/bin/python3.11
 """
 A generic wrapper to access nrn binaries from a python installation
 Please create a softlink with the binary name to be called.
