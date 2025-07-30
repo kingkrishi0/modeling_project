@@ -432,44 +432,44 @@ static int _ode_spec1(_threadargsproto_);
  
 /*CVODE*/
  static int _ode_spec1 (double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt) {int _reset = 0; {
-   DP = 0.0 ;
-   DB = 0.0 ;
-   Dp75 = 0.0 ;
-   DTrkB = 0.0 ;
-   Dp75_pro = 0.0 ;
-   Dp75_B = 0.0 ;
-   DTrkB_B = 0.0 ;
-   DTrkB_pro = 0.0 ;
-   DtPA = 0.0 ;
-   Dactivity_level = 0.0 ;
+   DP = ks_P_variable - k_cleave * tPA * P - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degP * P ;
+   DB = k_cleave * tPA * P - k_TrkB_B_on * aff_TrkB_B * B * TrkB + k_TrkB_B_off * TrkB_B - k_p75_B_on * aff_p75_B * B * p75 + k_p75_B_off * p75_B - k_degB * B ;
+   Dp75 = ks_p75 * ( 1.0 + activity_level * 0.001 ) - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_p75_B_on * aff_p75_B * B * p75 + k_p75_B_off * p75_B - k_degR1 * p75 ;
+   DTrkB = ks_TrkB * ( 1.0 + activity_level * 0.002 ) - k_TrkB_B_on * aff_TrkB_B * B * TrkB + k_TrkB_B_off * TrkB_B - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degR2 * TrkB ;
+   Dp75_pro = k_p75_pro_on * aff_p75_pro * P * p75 - k_p75_pro_off * p75_pro - k_int_p75_pro * p75_pro ;
+   Dp75_B = k_p75_B_on * aff_p75_B * B * p75 - k_p75_B_off * p75_B - k_int_p75_B * p75_B ;
+   DTrkB_B = k_TrkB_B_on * aff_TrkB_B * B * TrkB - k_TrkB_B_off * TrkB_B - k_int_TrkB_B * TrkB_B ;
+   DTrkB_pro = k_TrkB_pro_on * aff_TrkB_pro * P * TrkB - k_TrkB_pro_off * TrkB_pro - k_int_TrkB_pro * TrkB_pro ;
+   DtPA = ks_tPA_variable - k_deg_tPA * tPA ;
+   Dactivity_level = - activity_level / tau_activity + syn_input_activity ;
    }
  return _reset;
 }
  static int _ode_matsol1 (double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt) {
- DP = DP  / (1. - dt*( 0.0 )) ;
- DB = DB  / (1. - dt*( 0.0 )) ;
- Dp75 = Dp75  / (1. - dt*( 0.0 )) ;
- DTrkB = DTrkB  / (1. - dt*( 0.0 )) ;
- Dp75_pro = Dp75_pro  / (1. - dt*( 0.0 )) ;
- Dp75_B = Dp75_B  / (1. - dt*( 0.0 )) ;
- DTrkB_B = DTrkB_B  / (1. - dt*( 0.0 )) ;
- DTrkB_pro = DTrkB_pro  / (1. - dt*( 0.0 )) ;
- DtPA = DtPA  / (1. - dt*( 0.0 )) ;
- Dactivity_level = Dactivity_level  / (1. - dt*( 0.0 )) ;
+ DP = DP  / (1. - dt*( ( - ( k_cleave * tPA )*( 1.0 ) ) - ( ( k_p75_pro_on * aff_p75_pro )*( 1.0 ) )*( p75 ) - ( ( k_TrkB_pro_on * aff_TrkB_pro )*( 1.0 ) )*( TrkB ) - ( k_degP )*( 1.0 ) )) ;
+ DB = DB  / (1. - dt*( ( - ( ( k_TrkB_B_on * aff_TrkB_B )*( 1.0 ) )*( TrkB ) ) - ( ( k_p75_B_on * aff_p75_B )*( 1.0 ) )*( p75 ) - ( k_degB )*( 1.0 ) )) ;
+ Dp75 = Dp75  / (1. - dt*( ( - ( k_p75_pro_on * aff_p75_pro * P )*( 1.0 ) ) - ( k_p75_B_on * aff_p75_B * B )*( 1.0 ) - ( k_degR1 )*( 1.0 ) )) ;
+ DTrkB = DTrkB  / (1. - dt*( ( - ( k_TrkB_B_on * aff_TrkB_B * B )*( 1.0 ) ) - ( k_TrkB_pro_on * aff_TrkB_pro * P )*( 1.0 ) - ( k_degR2 )*( 1.0 ) )) ;
+ Dp75_pro = Dp75_pro  / (1. - dt*( ( - ( k_p75_pro_off )*( 1.0 ) ) - ( k_int_p75_pro )*( 1.0 ) )) ;
+ Dp75_B = Dp75_B  / (1. - dt*( ( - ( k_p75_B_off )*( 1.0 ) ) - ( k_int_p75_B )*( 1.0 ) )) ;
+ DTrkB_B = DTrkB_B  / (1. - dt*( ( - ( k_TrkB_B_off )*( 1.0 ) ) - ( k_int_TrkB_B )*( 1.0 ) )) ;
+ DTrkB_pro = DTrkB_pro  / (1. - dt*( ( - ( k_TrkB_pro_off )*( 1.0 ) ) - ( k_int_TrkB_pro )*( 1.0 ) )) ;
+ DtPA = DtPA  / (1. - dt*( ( - ( k_deg_tPA )*( 1.0 ) ) )) ;
+ Dactivity_level = Dactivity_level  / (1. - dt*( ( - 1.0 ) / tau_activity )) ;
   return 0;
 }
  /*END CVODE*/
  static int states (double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt) { {
-    P = P - dt*(- ( 0.0 ) ) ;
-    B = B - dt*(- ( 0.0 ) ) ;
-    p75 = p75 - dt*(- ( 0.0 ) ) ;
-    TrkB = TrkB - dt*(- ( 0.0 ) ) ;
-    p75_pro = p75_pro - dt*(- ( 0.0 ) ) ;
-    p75_B = p75_B - dt*(- ( 0.0 ) ) ;
-    TrkB_B = TrkB_B - dt*(- ( 0.0 ) ) ;
-    TrkB_pro = TrkB_pro - dt*(- ( 0.0 ) ) ;
-    tPA = tPA - dt*(- ( 0.0 ) ) ;
-    activity_level = activity_level - dt*(- ( 0.0 ) ) ;
+    P = P + (1. - exp(dt*(( - ( k_cleave * tPA )*( 1.0 ) ) - ( ( k_p75_pro_on * aff_p75_pro )*( 1.0 ) )*( p75 ) - ( ( k_TrkB_pro_on * aff_TrkB_pro )*( 1.0 ) )*( TrkB ) - ( k_degP )*( 1.0 ))))*(- ( ks_P_variable + ( k_p75_pro_off )*( p75_pro ) + ( k_TrkB_pro_off )*( TrkB_pro ) ) / ( ( - ( ( k_cleave )*( tPA ) )*( 1.0 ) ) - ( ( ( k_p75_pro_on )*( aff_p75_pro ) )*( 1.0 ) )*( p75 ) - ( ( ( k_TrkB_pro_on )*( aff_TrkB_pro ) )*( 1.0 ) )*( TrkB ) - ( k_degP )*( 1.0 ) ) - P) ;
+    B = B + (1. - exp(dt*(( - ( ( k_TrkB_B_on * aff_TrkB_B )*( 1.0 ) )*( TrkB ) ) - ( ( k_p75_B_on * aff_p75_B )*( 1.0 ) )*( p75 ) - ( k_degB )*( 1.0 ))))*(- ( ( ( k_cleave )*( tPA ) )*( P ) + ( k_TrkB_B_off )*( TrkB_B ) + ( k_p75_B_off )*( p75_B ) ) / ( ( - ( ( ( k_TrkB_B_on )*( aff_TrkB_B ) )*( 1.0 ) )*( TrkB ) ) - ( ( ( k_p75_B_on )*( aff_p75_B ) )*( 1.0 ) )*( p75 ) - ( k_degB )*( 1.0 ) ) - B) ;
+    p75 = p75 + (1. - exp(dt*(( - ( k_p75_pro_on * aff_p75_pro * P )*( 1.0 ) ) - ( k_p75_B_on * aff_p75_B * B )*( 1.0 ) - ( k_degR1 )*( 1.0 ))))*(- ( ( ks_p75 )*( ( 1.0 + ( activity_level )*( 0.001 ) ) ) + ( k_p75_pro_off )*( p75_pro ) + ( k_p75_B_off )*( p75_B ) ) / ( ( - ( ( ( k_p75_pro_on )*( aff_p75_pro ) )*( P ) )*( 1.0 ) ) - ( ( ( k_p75_B_on )*( aff_p75_B ) )*( B ) )*( 1.0 ) - ( k_degR1 )*( 1.0 ) ) - p75) ;
+    TrkB = TrkB + (1. - exp(dt*(( - ( k_TrkB_B_on * aff_TrkB_B * B )*( 1.0 ) ) - ( k_TrkB_pro_on * aff_TrkB_pro * P )*( 1.0 ) - ( k_degR2 )*( 1.0 ))))*(- ( ( ks_TrkB )*( ( 1.0 + ( activity_level )*( 0.002 ) ) ) + ( k_TrkB_B_off )*( TrkB_B ) + ( k_TrkB_pro_off )*( TrkB_pro ) ) / ( ( - ( ( ( k_TrkB_B_on )*( aff_TrkB_B ) )*( B ) )*( 1.0 ) ) - ( ( ( k_TrkB_pro_on )*( aff_TrkB_pro ) )*( P ) )*( 1.0 ) - ( k_degR2 )*( 1.0 ) ) - TrkB) ;
+    p75_pro = p75_pro + (1. - exp(dt*(( - ( k_p75_pro_off )*( 1.0 ) ) - ( k_int_p75_pro )*( 1.0 ))))*(- ( ( ( ( k_p75_pro_on )*( aff_p75_pro ) )*( P ) )*( p75 ) ) / ( ( - ( k_p75_pro_off )*( 1.0 ) ) - ( k_int_p75_pro )*( 1.0 ) ) - p75_pro) ;
+    p75_B = p75_B + (1. - exp(dt*(( - ( k_p75_B_off )*( 1.0 ) ) - ( k_int_p75_B )*( 1.0 ))))*(- ( ( ( ( k_p75_B_on )*( aff_p75_B ) )*( B ) )*( p75 ) ) / ( ( - ( k_p75_B_off )*( 1.0 ) ) - ( k_int_p75_B )*( 1.0 ) ) - p75_B) ;
+    TrkB_B = TrkB_B + (1. - exp(dt*(( - ( k_TrkB_B_off )*( 1.0 ) ) - ( k_int_TrkB_B )*( 1.0 ))))*(- ( ( ( ( k_TrkB_B_on )*( aff_TrkB_B ) )*( B ) )*( TrkB ) ) / ( ( - ( k_TrkB_B_off )*( 1.0 ) ) - ( k_int_TrkB_B )*( 1.0 ) ) - TrkB_B) ;
+    TrkB_pro = TrkB_pro + (1. - exp(dt*(( - ( k_TrkB_pro_off )*( 1.0 ) ) - ( k_int_TrkB_pro )*( 1.0 ))))*(- ( ( ( ( k_TrkB_pro_on )*( aff_TrkB_pro ) )*( P ) )*( TrkB ) ) / ( ( - ( k_TrkB_pro_off )*( 1.0 ) ) - ( k_int_TrkB_pro )*( 1.0 ) ) - TrkB_pro) ;
+    tPA = tPA + (1. - exp(dt*(( - ( k_deg_tPA )*( 1.0 ) ))))*(- ( ks_tPA_variable ) / ( ( - ( k_deg_tPA )*( 1.0 ) ) ) - tPA) ;
+    activity_level = activity_level + (1. - exp(dt*(( - 1.0 ) / tau_activity)))*(- ( syn_input_activity ) / ( ( - 1.0 ) / tau_activity ) - activity_level) ;
    }
   return 0;
 }
@@ -662,8 +662,8 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
   } {
    ks_P_variable = ksP * ( 1.0 + activity_level ) ;
    ks_tPA_variable = ks_tPA * ( 1.0 + activity_level ) ;
-   growth_strength = 0.0 ;
-   apop_strength = 0.0 ;
+   growth_strength = ( Hill ( _threadargscomma_ TrkB_B , 0.05 , 2.0 ) + Hill ( _threadargscomma_ TrkB_pro , 0.02 , 2.0 ) ) / 2.0 ;
+   apop_strength = ( Hill ( _threadargscomma_ p75_pro , 0.02 , 2.0 ) + Hill ( _threadargscomma_ p75_B , 0.02 , 2.0 ) ) / 2.0 ;
    }
 }}
 
@@ -809,50 +809,32 @@ static const char* nmodl_file_text =
   "    ks_P_variable = ksP * (1 + activity_level)\n"
   "    ks_tPA_variable = ks_tPA * (1 + activity_level)\n"
   "\n"
-  "    : growth_strength = (Hill(TrkB_B, 0.05, 2) + Hill(TrkB_pro, 0.02, 2))/2\n"
-  "    : apop_strength = (Hill(p75_pro, 0.02, 2) + Hill(p75_B, 0.02, 2))/2\n"
-  "    growth_strength = 0\n"
-  "    apop_strength = 0\n"
+  "    growth_strength = (Hill(TrkB_B, 0.05, 2) + Hill(TrkB_pro, 0.02, 2))/2\n"
+  "    apop_strength = (Hill(p75_pro, 0.02, 2) + Hill(p75_B, 0.02, 2))/2\n"
+  "\n"
   "}\n"
   "\n"
   "DERIVATIVE states {\n"
-  "    :P' = ks_P_variable - k_cleave * tPA * P - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degP * P\n"
+  "    P' = ks_P_variable - k_cleave * tPA * P - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degP * P\n"
   "        \n"
-  "    :B' = k_cleave * tPA * P - k_TrkB_B_on * aff_TrkB_B * B * TrkB + k_TrkB_B_off * TrkB_B - k_p75_B_on * aff_p75_B * B * p75 + k_p75_B_off * p75_B - k_degB * B\n"
+  "    B' = k_cleave * tPA * P - k_TrkB_B_on * aff_TrkB_B * B * TrkB + k_TrkB_B_off * TrkB_B - k_p75_B_on * aff_p75_B * B * p75 + k_p75_B_off * p75_B - k_degB * B\n"
   "    \n"
-  "    :p75' = ks_p75 - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_p75_B_on * aff_p75_B * B * p75 + k_p75_B_off * p75_B - k_degR1 * p75\n"
+  "    p75' = ks_p75 * (1 + activity_level * 0.001) - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_p75_B_on * aff_p75_B * B * p75 + k_p75_B_off * p75_B - k_degR1 * p75\n"
   "        \n"
-  "    :TrkB' = ks_TrkB - k_TrkB_B_on * aff_TrkB_B * B * TrkB + k_TrkB_B_off * TrkB_B - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degR2 * TrkB\n"
+  "    TrkB' = ks_TrkB * (1 + activity_level * 0.002) - k_TrkB_B_on * aff_TrkB_B * B * TrkB + k_TrkB_B_off * TrkB_B - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degR2 * TrkB\n"
   "        \n"
-  "    :p75_pro' = k_p75_pro_on * aff_p75_pro * P * p75 - k_p75_pro_off * p75_pro - k_int_p75_pro * p75_pro\n"
+  "    p75_pro' = k_p75_pro_on * aff_p75_pro * P * p75 - k_p75_pro_off * p75_pro - k_int_p75_pro * p75_pro\n"
   "      \n"
-  "    :p75_B' = k_p75_B_on * aff_p75_B * B * p75 - k_p75_B_off * p75_B - k_int_p75_B * p75_B\n"
+  "    p75_B' = k_p75_B_on * aff_p75_B * B * p75 - k_p75_B_off * p75_B - k_int_p75_B * p75_B\n"
   "        \n"
-  "    :TrkB_B' = k_TrkB_B_on * aff_TrkB_B * B * TrkB - k_TrkB_B_off * TrkB_B - k_int_TrkB_B * TrkB_B\n"
+  "    TrkB_B' = k_TrkB_B_on * aff_TrkB_B * B * TrkB - k_TrkB_B_off * TrkB_B - k_int_TrkB_B * TrkB_B\n"
   "        \n"
-  "    : TrkB_pro' = k_TrkB_pro_on * aff_TrkB_pro * P * TrkB - k_TrkB_pro_off * TrkB_pro - k_int_TrkB_pro * TrkB_pro\n"
+  "    TrkB_pro' = k_TrkB_pro_on * aff_TrkB_pro * P * TrkB - k_TrkB_pro_off * TrkB_pro - k_int_TrkB_pro * TrkB_pro\n"
   "        \n"
-  "    : tPA' = ks_tPA_variable - k_deg_tPA * tPA\n"
+  "    tPA' = ks_tPA_variable - k_deg_tPA * tPA\n"
   "\n"
-  "    P' = 0\n"
-  "    B' = 0\n"
-  "    \n"
-  "    p75' = 0\n"
-  "        \n"
-  "    TrkB' = 0\n"
-  "        \n"
-  "    p75_pro' = 0\n"
-  "      \n"
-  "    p75_B' = 0\n"
-  "        \n"
-  "    TrkB_B' = 0\n"
-  "        \n"
-  "    TrkB_pro' = 0\n"
-  "        \n"
-  "    tPA' = 0\n"
   "\n"
-  "    : activity_level' = -activity_level / tau_activity + syn_input_activity\n"
-  "    activity_level' = 0\n"
+  "    activity_level' = -activity_level / tau_activity + syn_input_activity\n"
   "}\n"
   "\n"
   "FUNCTION Hill(C, KD, n) {\n"

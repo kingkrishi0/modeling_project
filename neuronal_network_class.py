@@ -374,12 +374,12 @@ if __name__ == "__main__":
     neuron_parameters = [
         5.0e-3, 0.01, 1.0, 0.9, 5.0e-4, 0.2, 0.1, 1.0, 0.9, 0.005, 0.3, 0.1, 0.0001, 0.00001,
         0.0005, 0.0005, 0.0005, 0.0005, 0.9, 0.1, 0.1, 0.9, 0.0011, 0.0001, 0.0001, 0.00001,
-        50.0, 0.1, 1.0, 0.0001, -65.0, -20.0
+        50.0, 1.0, 1.0, 0.0001, -65.0, -20.0
     ]
 
     # Create network
-    grid_rows = 2
-    grid_cols = 2
+    grid_rows = 4
+    grid_cols = 4
     network = CorrectedNeuronalNetwork(
         rows=grid_rows, 
         cols=grid_cols,
@@ -415,7 +415,7 @@ if __name__ == "__main__":
     # Simulation parameters
     runtime = 250  # ms
     print_interval = 3600  # Print every 200 time steps (5ms intervals)
-    vis_interval = 800     # Visualize every 800 time steps (20ms intervals)
+    vis_interval = 100     # Visualize every 800 time steps (20ms intervals)
     num_steps = int(runtime / h.dt)
 
     print(f"\n--- Starting Simulation ({num_steps} steps, {runtime}ms total) ---")
