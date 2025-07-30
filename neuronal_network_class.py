@@ -1,5 +1,3 @@
-
-
 from neuron import h, nrn
 from neuronpp.cells.cell import Cell
 from neuronpp.core.hocwrappers.synapses.single_synapse import SingleSynapse
@@ -7,23 +5,18 @@ import numpy as np
 from neuronpp.core.hocwrappers.point_process import PointProcess
 import os
 from ode_neuron_class import ODENeuron
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 
-from neuron import h, nrn
-from neuronpp.cells.cell import Cell
-from neuronpp.core.hocwrappers.synapses.single_synapse import SingleSynapse
-import numpy as np
-from neuronpp.core.hocwrappers.point_process import PointProcess
-import os
-
-class NeuronalNetwork:
+class CorrectedNeuronalNetwork:
     def __init__(self, rows: int, cols: int, initial_neuron_concentrations: list, neuron_params: list,
-                 synapse_type: str = "ProbabilisticSyn", # Use ProbabilisticSyn
-                 initial_syn_weight: float = 0.01,
-                 learning_rate: float = 0.0001,
-                 min_weight: float = 0.0,
+                 synapse_type: str = "ProbabilisticSyn",
+                 initial_syn_weight: float = 0.5,
+                 learning_rate: float = 0.001,
+                 min_weight: float = 0.05,  # Prevent complete decay
                  max_weight: float = 1.0,
-                 threshold_growth: float = 0.2,
-                 threshold_apoptosis: float = -0.2):
+                 threshold_growth: float = 0.1,  # Lower thresholds
+                 threshold_apoptosis: float = -0.1):
         
         if rows<=0 or cols<=0:
             raise ValueError("rows and cols must be above 0")
@@ -43,101 +36,123 @@ class NeuronalNetwork:
         self.threshold_growth = threshold_growth
         self.threshold_apoptosis = threshold_apoptosis
 
-        print(f"Building neuronal network")
+        print(f"Building corrected neuronal network ({rows}x{cols})")
 
+        # Create neurons
         for r in range(self.rows):
             newrow = []
             for c in range(self.cols):
-                neuron = ODENeuron(name=f'neuron_r{r}c{c}', initial_concentrations=initial_neuron_concentrations, 
-                                params=neuron_params)
+                neuron = ODENeuron(name=f'neuron_r{r}c{c}', 
+                                 initial_concentrations=initial_neuron_concentrations, 
+                                 params=neuron_params)
                 newrow.append(neuron)
             self.neurons.append(newrow)
 
-
         self._build_grid_connections()
-        print(f"Network made awesome!")
+        print(f"Network created with {len(self.connections)} connections!")
 
     def _get_neuron_at_grid_pos(self, r: int, c: int):
         if 0 <= r < self.rows and 0 <= c < self.cols:
             return self.neurons[r][c]
         return None
     
-    def _create_connection(self, pre_neuron, post_neuron):
+    def _create_connection(self, pre_neuron, post_neuron, pre_r, pre_c, post_r, post_c):
         conn_id = f"{pre_neuron.name}_to_{post_neuron.name}"
 
         if conn_id in self._created_unidirectional_connections:
             return False
         
-        post_segment_loc = post_neuron.soma(0.5) 
-        h_section_at_segment = (post_segment_loc.parent.hoc)(post_segment_loc.x)
+        try:
+            post_segment_loc = post_neuron.soma(0.5) 
+            h_section_at_segment = (post_segment_loc.parent.hoc)(post_segment_loc.x)
 
-        if hasattr(h, self.synapse_type):
-            raw_h_point_process = getattr(h, self.synapse_type)(h_section_at_segment)
-        else:
-            raise ValueError(f"Synapse type '{self.synapse_type}' is not a recognized NEURON PointProcess. "
-                             f"Ensure it's compiled and correct. (e.g., ProbabilisticSyn)")
+            if hasattr(h, self.synapse_type):
+                raw_h_point_process = getattr(h, self.synapse_type)(h_section_at_segment)
+            else:
+                raise ValueError(f"Synapse type '{self.synapse_type}' not found")
 
-        point_process_mech = PointProcess(
-            hoc_obj=raw_h_point_process,
-            parent=post_segment_loc.parent,
-            name=f"{self.synapse_type}_{conn_id}",
-            cell = post_neuron,
-            mod_name = self.synapse_type
-        )
-        
-        # Primary NetCon: from presynaptic neuron's spike detector to the postsynaptic ProbabilisticSyn
-        netcon_to_synapse = h.NetCon(pre_neuron.soma_segment.hoc._ref_v, point_process_mech.hoc, 
-                           sec=pre_neuron.soma.hoc)
-        netcon_to_synapse.weight[0] = self.initial_syn_weight
-        netcon_to_synapse.delay = 1.0 # Standard synaptic delay
-        netcon_to_synapse.threshold = pre_neuron.ode_mech.v_threshold_spike
+            point_process_mech = PointProcess(
+                hoc_obj=raw_h_point_process,
+                parent=post_segment_loc.parent,
+                name=f"{self.synapse_type}_{conn_id}",
+                cell=post_neuron,
+                mod_name=self.synapse_type
+            )
+            
+            # Create NetCon - FIXED: Use membrane voltage directly
+            netcon_to_synapse = h.NetCon(pre_neuron.soma_segment.hoc._ref_v, 
+                                       point_process_mech.hoc, 
+                                       sec=pre_neuron.soma.hoc)
+            netcon_to_synapse.weight[0] = self.initial_syn_weight
+            netcon_to_synapse.delay = 1.0
+            netcon_to_synapse.threshold = -25.0  # More sensitive threshold
 
-        # LINK THE POINTER: This is crucial for ProbabilisticSyn to write to ODENeuron's syn_input_activity
-        # The POINTER declaration in ProbabilisticSyn (target_syn_input_activity)
-        # needs to point to the address of the syn_input_activity variable in the ODENeuron mechanism.
-        h.setpointer(post_neuron.ode_mech._ref_syn_input_activity, 'target_syn_input_activity', point_process_mech.hoc)
-        
-        syn_obj = SingleSynapse(
-            source=pre_neuron.spike_detector, # Source for neuronpp wrapper, though netcon handles actual connection
-            point_process=point_process_mech, 
-            name=conn_id 
-        )
-        # Add the actual NetCon to the SingleSynapse's list for later access/modulation
-        syn_obj.netcons.append(netcon_to_synapse)
+            # CRITICAL FIX: Set the pointer correctly
+            try:
+                h.setpointer(post_neuron.ode_mech._ref_syn_input_activity, 
+                           'target_syn_input_activity', 
+                           point_process_mech.hoc)
+                print(f"✓ Pointer set for {conn_id}")
+            except Exception as e:
+                print(f"✗ Pointer failed for {conn_id}: {e}")
+                return False
+            
+            syn_obj = SingleSynapse(
+                source=pre_neuron.spike_detector,
+                point_process=point_process_mech, 
+                name=conn_id 
+            )
+            syn_obj.netcons.append(netcon_to_synapse)
 
-
-        self.connections.append({
-            'pre_neuron': pre_neuron,
-            'post_neuron': post_neuron,
-            'syn': syn_obj, # This is the SingleSynapse object
-            'netcon_to_synapse': netcon_to_synapse # Store the main NetCon for weight modulation
-        })
-
-        self._created_unidirectional_connections.add(conn_id)
-        print(f"Connection established: {pre_neuron.name} -> {post_neuron.name}")
-        
-        return True
+            connection_info = {
+                'pre_neuron': pre_neuron,
+                'post_neuron': post_neuron,
+                'syn': syn_obj,
+                'netcon_to_synapse': netcon_to_synapse,
+                'pre_r': pre_r,
+                'pre_c': pre_c,
+                'post_r': post_r,
+                'post_c': post_c
+            }
+            
+            self.connections.append(connection_info)
+            self._created_unidirectional_connections.add(conn_id)
+            
+            print(f"✓ Connection: {pre_neuron.name} -> {post_neuron.name} (weight={netcon_to_synapse.weight[0]:.3f})")
+            return True
+            
+        except Exception as e:
+            print(f"✗ Failed to create connection {conn_id}: {e}")
+            return False
 
     def _build_grid_connections(self):
         if self.num_neurons < 2:
             print("Need at least 2 neurons")
             return
 
+        connection_count = 0
         for r in range(self.rows):
             for c in range(self.cols):
                 pre_neuron = self._get_neuron_at_grid_pos(r, c)
-                offsets = [(0,1), (1, 0)] # Connect right and down (unidirectional first)
+                
+                # Connect to right and down neighbors (bidirectionally)
+                offsets = [(0,1), (1, 0)]
 
                 for dr, dc in offsets:
                     post_r, post_c = r+dr, c+dc
-
                     post_neuron = self._get_neuron_at_grid_pos(post_r, post_c)
 
                     if post_neuron:
-                        self._create_connection(pre_neuron, post_neuron)
-                        self._create_connection(post_neuron, pre_neuron) # Bidirectional for all
+                        # Create both directions
+                        if self._create_connection(pre_neuron, post_neuron, r, c, post_r, post_c):
+                            connection_count += 1
+                        if self._create_connection(post_neuron, pre_neuron, post_r, post_c, r, c):
+                            connection_count += 1
+        
+        print(f"Total connections created: {connection_count}")
 
     def modulate_synaptic_weights(self):
+        """Improved synaptic weight modulation"""
         for conn_info in self.connections:
             pre_neuron = conn_info['pre_neuron']
             post_neuron = conn_info['post_neuron']
@@ -147,338 +162,467 @@ class NeuronalNetwork:
             post_n_state = post_neuron.calculate_and_get_neuron_state()
 
             current_weight = netcon_to_synapse.weight[0]
-            new_weight = current_weight
+            weight_change = 0.0
 
+            # Hebbian-like learning with activity correlation
             if pre_n_state > self.threshold_growth and post_n_state > self.threshold_growth:
-                new_weight += self.learning_rate
-
-
+                # Both neurons in growth state - strengthen connection
+                weight_change = self.learning_rate * 2.0
             elif pre_n_state < self.threshold_apoptosis or post_n_state < self.threshold_apoptosis:
-                new_weight -= self.learning_rate
+                # One or both in apoptosis state - weaken connection
+                weight_change = -self.learning_rate * 0.5
+            else:
+                # Neutral state - small positive drift to maintain baseline connectivity
+                weight_change = self.learning_rate * 0.1
 
-            new_weight = max(self.min_weight, new_weight)
-            new_weight = min(self.max_weight, new_weight)
+            new_weight = current_weight + weight_change
+            new_weight = max(self.min_weight, min(self.max_weight, new_weight))
 
             netcon_to_synapse.weight[0] = new_weight
 
-# Assuming ODENeuron and NeuronalNetwork classes are defined above this point
-# and neuronpp imports are correct.
-# Ensure mods/ode_neuron.mod and mods/probabilistic_syn.mod are present.
+    def print_network_state(self, time_step, current_time):
+        """Print detailed network state"""
+        print(f"\n=== Network State at Step {time_step}, Time = {current_time:.1f}ms ===")
+        
+        for r in range(self.rows):
+            for c in range(self.cols):
+                neuron = self.neurons[r][c]
+                state = neuron.calculate_and_get_neuron_state()
+                
+                # Get current values safely
+                try:
+                    activity = neuron.activity_level_ref[0] if len(neuron.activity_level_ref) > 0 else neuron.ode_mech.activity_level
+                    syn_input = neuron.syn_input_activity_ref[0] if len(neuron.syn_input_activity_ref) > 0 else neuron.ode_mech.syn_input_activity
+                    voltage = neuron.v_ref[0] if len(neuron.v_ref) > 0 else neuron.soma_segment.hoc.v
+                    P_conc = neuron.P[0] if len(neuron.P) > 0 else neuron.ode_mech.P
+                    B_conc = neuron.B[0] if len(neuron.B) > 0 else neuron.ode_mech.B
+                except:
+                    activity = neuron.ode_mech.activity_level
+                    syn_input = neuron.ode_mech.syn_input_activity
+                    voltage = neuron.soma_segment.hoc.v
+                    P_conc = neuron.ode_mech.P
+                    B_conc = neuron.ode_mech.B
+                
+                print(f"  {neuron.name}: State={state:.3f}, V={voltage:.1f}mV, "
+                      f"SynInput={syn_input:.3f}, Activity={activity:.3f}, "
+                      f"P={P_conc:.3f}, B={B_conc:.3f}")
+        
+        # Print connection weights
+        print("  Connection Weights:")
+        for conn in self.connections[:4]:  # Show first 4 connections
+            weight = conn['netcon_to_synapse'].weight[0]
+            pre_name = conn['pre_neuron'].name
+            post_name = conn['post_neuron'].name
+            print(f"    {pre_name} -> {post_name}: {weight:.4f}")
+        if len(self.connections) > 4:
+            print(f"    ... and {len(self.connections)-4} more connections")
 
+    def visualize_network(self, time_step, current_time, save_fig=False):
+        """Create network visualization"""
+        fig, ax = plt.subplots(1, 1, figsize=(12, 10))
+        
+        # Calculate neuron positions
+        neuron_positions = {}
+        for r in range(self.rows):
+            for c in range(self.cols):
+                x = c * 3.0
+                y = (self.rows - r - 1) * 3.0
+                neuron_positions[(r, c)] = (x, y)
+        
+        # Draw connections
+        for conn in self.connections:
+            if all(k in conn for k in ['pre_r', 'pre_c', 'post_r', 'post_c']):
+                pre_pos = neuron_positions[(conn['pre_r'], conn['pre_c'])]
+                post_pos = neuron_positions[(conn['post_r'], conn['post_c'])]
+                
+                weight = conn['netcon_to_synapse'].weight[0]
+                thickness = max(0.5, min(8.0, weight * 10))
+                
+                if weight > 0.5:
+                    color = 'darkgreen'
+                elif weight > 0.2:
+                    color = 'orange'
+                else:
+                    color = 'red'
+                
+                # Draw connection line
+                ax.plot([pre_pos[0], post_pos[0]], [pre_pos[1], post_pos[1]], 
+                       color=color, linewidth=thickness, alpha=0.7)
+                
+                # Add directional arrow
+                dx = post_pos[0] - pre_pos[0]
+                dy = post_pos[1] - pre_pos[1]
+                length = np.sqrt(dx**2 + dy**2)
+                if length > 0:
+                    # Arrow at 80% of the way
+                    arrow_x = pre_pos[0] + 0.8 * dx
+                    arrow_y = pre_pos[1] + 0.8 * dy
+                    ax.annotate('', xy=(arrow_x + 0.1*dx, arrow_y + 0.1*dy), 
+                               xytext=(arrow_x, arrow_y),
+                               arrowprops=dict(arrowstyle='->', color=color, lw=thickness/2))
+        
+        # Draw neurons
+        for r in range(self.rows):
+            for c in range(self.cols):
+                neuron = self.neurons[r][c]
+                pos = neuron_positions[(r, c)]
+                
+                state = neuron.calculate_and_get_neuron_state()
+                try:
+                    activity = neuron.activity_level_ref[0] if len(neuron.activity_level_ref) > 0 else neuron.ode_mech.activity_level
+                    voltage = neuron.v_ref[0] if len(neuron.v_ref) > 0 else neuron.soma_segment.hoc.v
+                except:
+                    activity = neuron.ode_mech.activity_level
+                    voltage = neuron.soma_segment.hoc.v
+                
+                # Color based on state
+                if state > self.threshold_growth:
+                    neuron_color = 'lightgreen'
+                elif state < self.threshold_apoptosis:
+                    neuron_color = 'lightcoral'
+                else:
+                    neuron_color = 'lightblue'
+                
+                # Size based on activity
+                size = max(500, min(2000, 500 + abs(activity) * 50))
+                
+                # Special highlight for spiking neurons
+                edge_color = 'red' if voltage > -30 else 'black'
+                edge_width = 4 if voltage > -30 else 2
+                
+                ax.scatter(pos[0], pos[1], s=size, c=neuron_color, 
+                          edgecolors=edge_color, linewidth=edge_width, alpha=0.8)
+                
+                # Label with key info
+                ax.text(pos[0], pos[1], f'({r},{c})\nS:{state:.2f}\nV:{voltage:.0f}mV\nA:{activity:.1f}',
+                       ha='center', va='center', fontsize=9, fontweight='bold')
+        
+        ax.set_xlim(-1, self.cols * 3)
+        ax.set_ylim(-1, self.rows * 3)
+        ax.set_aspect('equal')
+        ax.grid(True, alpha=0.3)
+        ax.set_title(f'Neural Network at t={current_time:.1f}ms (Step {time_step})', fontsize=14)
+        ax.set_xlabel('Grid X')
+        ax.set_ylabel('Grid Y')
+        
+        # Legend
+        legend_elements = [
+            plt.Line2D([0], [0], color='darkgreen', lw=4, label='Strong (>0.5)'),
+            plt.Line2D([0], [0], color='orange', lw=4, label='Medium (0.2-0.5)'),
+            plt.Line2D([0], [0], color='red', lw=4, label='Weak (<0.2)'),
+            plt.scatter([], [], s=500, c='lightgreen', edgecolors='black', label='Growth'),
+            plt.scatter([], [], s=500, c='lightcoral', edgecolors='black', label='Apoptosis'),
+            plt.scatter([], [], s=500, c='lightblue', edgecolors='black', label='Neutral'),
+            plt.scatter([], [], s=500, c='gray', edgecolors='red', linewidth=4, label='Spiking')
+        ]
+        ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(1.02, 1))
+        
+        plt.tight_layout()
+        
+        if save_fig:
+            plt.savefig(f'network_t{time_step:04d}.png', dpi=150, bbox_inches='tight')
+            plt.close()
+        else:
+            plt.show(block=False)
+            plt.pause(0.1)
+
+# Main execution
 if __name__ == "__main__":
-    print("--- Starting Simulation Script ---")
+    print("=== Starting Corrected Neuronal Network Simulation ===")
 
-    # --- 1. Compile NMODL files ---
+    # Compile NMODL files
     mod_dir = os.path.join(os.path.dirname(__file__), 'mods')
     if os.path.exists(mod_dir):
         print(f"Compiling NMODL files in {mod_dir}...")
         os.system(f"nrnivmodl {mod_dir}")
     else:
-        print("Warning: 'mods' directory not found. Attempting to compile NMODL files in current directory...")
-        os.system("nrnivmodl") # Compile mods in current directory
+        print("Compiling NMODL files in current directory...")
+        os.system("nrnivmodl")
 
+    # Load mechanisms
     try:
-        # Adjust path for your OS (e.g., .dll for Windows, .dylib for macOS)
-        h.nrn_load_dll(os.path.join("x86_64", ".libs", "libnrnmech.so"))
+        lib_paths = [
+            os.path.join("x86_64", ".libs", "libnrnmech.so"),
+            os.path.join("arm64", ".libs", "libnrnmech.dylib"),
+            os.path.join("x86_64", ".libs", "libnrnmech.dylib"),
+            "nrnmech.dll"
+        ]
+        
+        loaded = False
+        for lib_path in lib_paths:
+            if os.path.exists(lib_path):
+                try:
+                    h.nrn_load_dll(lib_path)
+                    print(f"✓ Loaded mechanisms from {lib_path}")
+                    loaded = True
+                    break
+                except Exception as e:
+                    print(f"Failed to load {lib_path}: {e}")
+                    continue
+        
+        if not loaded:
+            print("⚠ Warning: Could not load compiled mechanisms")
+            
     except Exception as e:
-        print(f"Error loading NEURON mechanisms: {e}")
-        print("Please ensure NMODL files are compiled and 'libnrnmech.so' (or .dll/.dylib) is in the correct path.")
-        exit()
+        print(f"Error with mechanism loading: {e}")
 
-    # --- 2. Define Initial Concentrations and Parameters ---
+    # Parameters
     initial_neuron_concentrations = [
         0.2, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.1
     ]
-    # neuron_parameters list order MUST match the `param_names` list in ODENeuron.__init__
-    # Make sure you have enough values here for all 32 parameters including the new ones
+    
     neuron_parameters = [
         5.0e-3, 0.01, 1.0, 0.9, 5.0e-4, 0.2, 0.1, 1.0, 0.9, 0.005, 0.3, 0.1, 0.0001, 0.00001,
-        0.0005, 0.0005, 0.0005, 0.0005, 0.9, 0.1, 0.1, 0.9, 0.0011, 0.0001, 0.0001, 0.00001, # Your original 26 params
-        50.0,    # tau_activity (ms) - index 26
-        0.1,     # activity_gain (unitless) - index 27
-        1.0,     # cm (uF/cm2) - index 28
-        0.0001,  # g_leak (S/cm2) - index 29
-        -65.0,   # e_leak (mV) - index 30
-        -20.0    # v_threshold_spike (mV) - index 31
+        0.0005, 0.0005, 0.0005, 0.0005, 0.9, 0.1, 0.1, 0.9, 0.0011, 0.0001, 0.0001, 0.00001,
+        50.0, 0.1, 1.0, 0.0001, -65.0, -20.0
     ]
 
-    # --- 3. Create the Neuronal Network Instance ---
+    # Create network
     grid_rows = 2
     grid_cols = 2
-    network = NeuronalNetwork(rows=grid_rows, cols=grid_cols,
-                              initial_neuron_concentrations=initial_neuron_concentrations,
-                              neuron_params=neuron_parameters,
-                              synapse_type="ProbabilisticSyn", # Use the new ProbabilisticSyn
-                              initial_syn_weight=0.5,
-                              learning_rate=0.0005,
-                              min_weight=0.0,
-                              max_weight=1.0)
+    network = CorrectedNeuronalNetwork(
+        rows=grid_rows, 
+        cols=grid_cols,
+        initial_neuron_concentrations=initial_neuron_concentrations,
+        neuron_params=neuron_parameters,
+        synapse_type="ProbabilisticSyn",
+        initial_syn_weight=0.6,    # Higher initial weight
+        learning_rate=0.002,       # Higher learning rate
+        min_weight=0.05,           # Prevent complete decay
+        max_weight=1.0,
+        threshold_growth=0.1,      # Lower thresholds for easier triggering
+        threshold_apoptosis=-0.1
+    )
 
-    print(f"\n--- Network Initialization Summary ---")
-    print(f"Network Dimensions: {network.rows}x{network.cols}")
-    print(f"Total Neurons Created: {len(network.neurons)}")
-    print(f"Total Bidirectional Connections: {len(network.connections)}")
-
-    # --- 4. Verify Connections and Initial States (Testing Statements) ---
-    if len(network.neurons) > 0:
-        first_neuron = network.neurons[0][0]
-        print(f"\nInitial State of {first_neuron.name}: {first_neuron.calculate_and_get_neuron_state():.4f}")
-        print(f"Initial ProBDNF (P) of {first_neuron.name}: {first_neuron.get_concentrations()['P']:.4e} uM")
-
-    if len(network.connections) > 0:
-        first_connection_info = network.connections[0]
-        pre_n = first_connection_info['pre_neuron']
-        post_n = first_connection_info['post_neuron']
-        syn = first_connection_info['syn'] # SingleSynapse object
-        netcon_main = first_connection_info['netcon_to_synapse'] # The NetCon we modulate
-
-        print(f"\nExample Connection: {pre_n.name} -> {post_n.name}")
-        print(f"  Initial Weight: {netcon_main.weight[0]:.4f}")
-        print(f"  Synapse Type: {syn.point_process_name}")
-        print(f"  Synapse Delay: {netcon_main.delay:.4f}")
-
-        try:
-            print(f"  Pre-synaptic Source for NetCon: {netcon_main.source.sec.name()}({netcon_main.source.x:.2f})")
-            print(f"  Post-synaptic Target for NetCon: {netcon_main.target.sec.name()}({netcon_main.target.x:.2f})")
-            
-            # Verify the POINTER connection (from ProbabilisticSyn to ODENeuron's syn_input_activity)
-            # This is accessed directly through the point_process_mech's hoc object
-            # and its target_syn_input_activity pointer.
-            print(f"  Synaptic Activity Pointer Set: {syn.point_process.hoc.target_syn_input_activity is not None}")
-            if syn.point_process.hoc.target_syn_input_activity is not None:
-                print(f"  Pointer target: {syn.point_process.hoc.target_syn_input_activity.name() if hasattr(syn.point_process.hoc.target_syn_input_activity, 'name') else 'NMODL variable'}")
-
-        except AttributeError:
-            print("  Could not retrieve information for pointer (unexpected structure or not set).")
-    else:
-        print("\nNo connections created in the network.")
-
-    # --- 5. Setup NEURON simulation parameters ---
-    h.finitialize(-65) # Initialize membrane potential
+    print(f"\n--- Network Summary ---")
+    print(f"Dimensions: {network.rows}x{network.cols}")
+    print(f"Total Neurons: {len([n for row in network.neurons for n in row])}")
+    print(f"Total Connections: {len(network.connections)}")
+    print("\n=== TESTING STIMULATION ===")
+    # RIGHT AFTER creating the network, add this test:
+    
+    # Add varied stimulation to trigger different behaviors
+    print("\nAdding stimulations...")
+    network.neurons[0][0].add_external_current_stim(delay=50, dur=200, amp=1.0)   # Much stronger
+    network.neurons[0][1].add_external_current_stim(delay=100, dur=200, amp=0.8)   
+    network.neurons[1][0].add_external_current_stim(delay=150, dur=200, amp=0.9)   
+    network.neurons[1][1].add_external_current_stim(delay=200, dur=200, amp=0.7)   # Increased
+    # Setup NEURON simulation
+    h.finitialize(-65)
     h.t = 0
-    h.dt = 0.025 # seconds (25 ms) - Adjusted for better balance with ODEs.
+    h.dt = 0.025
 
-    # --- 6. Recording Variables (for Plotting) ---
-    t_list = []
-    all_P_data = [[[] for _ in range(network.cols)] for _ in range(network.rows)]
-    all_B_data = [[[] for _ in range(network.cols)] for _ in range(network.rows)]
-    all_growth_data = [[[] for _ in range(network.cols)] for _ in range(network.rows)]
-    all_apop_data = [[[] for _ in range(network.cols)] for _ in range(network.rows)]
-    all_state_data = [[[] for _ in range(network.cols)] for _ in range(network.rows)]
-    all_activity_data = [[[] for _ in range(network.cols)] for _ in range(network.rows)] # activity_level_ref
-    all_p75_data = [[[] for _ in range(network.cols)] for _ in range(network.rows)]
-    all_TrkB_data = [[[] for _ in range(network.cols)] for _ in range(network.rows)]
-    all_p75_pro_data = [[[] for _ in range(network.cols)] for _ in range(network.rows)]
-    all_p75_B_data = [[[] for _ in range(network.cols)] for _ in range(network.rows)]
-    all_TrkB_B_data = [[[] for _ in range(network.cols)] for _ in range(network.rows)]
-    all_TrkB_pro_data = [[[] for _ in range(network.cols)] for _ in range(network.rows)]
-    all_tPA_data = [[[] for _ in range(network.cols)] for _ in range(network.rows)]
-    all_v_data = [[[] for _ in range(network.cols)] for _ in range(network.rows)] # Membrane potential
-    all_syn_input_activity_data = [[[] for _ in range(network.cols)] for _ in range(network.rows)] # NEW: syn_input_activity
-
-    # Recording for a specific synapse's weight (e.g., neuron_r0c0 -> neuron_r0c1)
-    target_synapse_for_plotting = None
-    if grid_cols > 1:
-        pre_n_r0c0 = network.neurons[0][0]
-        post_n_r0c1 = network.neurons[0][1]
-        for conn in network.connections:
-            if conn['pre_neuron'] == pre_n_r0c0 and conn['post_neuron'] == post_n_r0c1:
-                target_synapse_for_plotting = conn
-                break
-    if not target_synapse_for_plotting and len(network.connections) > 0:
-        target_synapse_for_plotting = network.connections[0]
-        print("Note: Plotting the weight of the first available connection.")
-    elif not target_synapse_for_plotting:
-        print("Note: No synapses found to plot weights.")
-
-    syn_weights_list = []
-
-    # --- Inject current into neuron_r0c0 to make it spike ---
-    network.neurons[0][0].add_external_current_stim(delay=50, dur=1500, amp=0.5)
-
-    # --- Simulation loop ---
-    runtime = 2000 # seconds
+    # Simulation parameters
+    runtime = 250  # ms
+    print_interval = 3600  # Print every 200 time steps (5ms intervals)
+    vis_interval = 800     # Visualize every 800 time steps (20ms intervals)
     num_steps = int(runtime / h.dt)
 
-    print("\n--- Starting Simulation Loop ---")
-    for i in range(num_steps):
-        # Record data for all neurons
-        for r_idx in range(network.rows):
-            for c_idx in range(network.cols):
-                neuron_obj = network.neurons[r_idx][c_idx]
-                
-                all_P_data[r_idx][c_idx].append(neuron_obj.P[0])
-                all_B_data[r_idx][c_idx].append(neuron_obj.B[0])
-                all_growth_data[r_idx][c_idx].append(neuron_obj.growth_strength_ref[0])
-                all_apop_data[r_idx][c_idx].append(neuron_obj.apop_strength_ref[0])
-                all_state_data[r_idx][c_idx].append(neuron_obj.calculate_and_get_neuron_state())
-                all_activity_data[r_idx][c_idx].append(neuron_obj.activity_level_ref[0])
-                all_p75_data[r_idx][c_idx].append(neuron_obj.p75[0])
-                all_TrkB_data[r_idx][c_idx].append(neuron_obj.TrkB[0])
-                all_p75_pro_data[r_idx][c_idx].append(neuron_obj.p75_pro[0])
-                all_p75_B_data[r_idx][c_idx].append(neuron_obj.p75_B[0])
-                all_TrkB_B_data[r_idx][c_idx].append(neuron_obj.TrkB_B[0])
-                all_TrkB_pro_data[r_idx][c_idx].append(neuron_obj.TrkB_pro[0])
-                all_tPA_data[r_idx][c_idx].append(neuron_obj.tPA[0])
-                all_v_data[r_idx][c_idx].append(neuron_obj.v_ref[0])
-                all_syn_input_activity_data[r_idx][c_idx].append(neuron_obj.syn_input_activity_ref[0]) # NEW RECORDING
-
-        h.fadvance() # Advance simulation
-
-        t_list.append(h.t)
-
-        if target_synapse_for_plotting:
-            syn_weights_list.append(target_synapse_for_plotting['netcon_to_synapse'].weight[0])
-
-        # Apply Synaptic Weight Modulation (after all neurons have potentially updated their states)
-        network.modulate_synaptic_weights()
-
-    print("--- Simulation Finished ---")
-
-    # --- 9. Convert lists to numpy arrays for plotting ---
-    times = np.array(t_list)
-    all_P_data_np = [[np.array(all_P_data[r][c]) for c in range(network.cols)] for r in range(network.rows)]
-    all_B_data_np = [[np.array(all_B_data[r][c]) for c in range(network.cols)] for r in range(network.rows)]
-    all_growth_data_np = [[np.array(all_growth_data[r][c]) for c in range(network.cols)] for r in range(network.rows)]
-    all_apop_data_np = [[np.array(all_apop_data[r][c]) for c in range(network.cols)] for r in range(network.rows)]
-    all_state_data_np = [[np.array(all_state_data[r][c]) for c in range(network.cols)] for r in range(network.rows)]
-    all_activity_data_np = [[np.array(all_activity_data[r][c]) for c in range(network.cols)] for r in range(network.rows)]
-    all_p75_data_np = [[np.array(all_p75_data[r][c]) for c in range(network.cols)] for r in range(network.rows)]
-    all_TrkB_data_np = [[np.array(all_TrkB_data[r][c]) for c in range(network.cols)] for r in range(network.rows)]
-    all_p75_pro_data_np = [[np.array(all_p75_pro_data[r][c]) for c in range(network.cols)] for r in range(network.rows)]
-    all_p75_B_data_np = [[np.array(all_p75_B_data[r][c]) for c in range(network.cols)] for r in range(network.rows)]
-    all_TrkB_B_data_np = [[np.array(all_TrkB_B_data[r][c]) for c in range(network.cols)] for r in range(network.rows)]
-    all_TrkB_pro_data_np = [[np.array(all_TrkB_pro_data[r][c]) for c in range(network.cols)] for r in range(network.rows)]
-    all_tPA_data_np = [[np.array(all_tPA_data[r][c]) for c in range(network.cols)] for r in range(network.rows)]
-    all_v_data_np = [[np.array(all_v_data[r][c]) for c in range(network.cols)] for r in range(network.rows)]
-    all_syn_input_activity_data_np = [[np.array(all_syn_input_activity_data[r][c]) for c in range(network.cols)] for r in range(network.rows)]
-
-    syn_weights_data = np.array(syn_weights_list)
-
-    # --- 10. Plotting Results ---
-    import matplotlib.pyplot as plt
-
-    # Plot membrane potential for each neuron
-    for r_plot in range(network.rows):
-        for c_plot in range(network.cols):
-            neuron_name = network.neurons[r_plot][c_plot].name
-            plt.figure(figsize=(12, 4))
-            plt.plot(times, all_v_data_np[r_plot][c_plot], label=f'{neuron_name} Membrane Potential (Vm)')
-            plt.xlabel('Time (s)')
-            plt.ylabel('Vm (mV)')
-            plt.title(f'Membrane Potential of {neuron_name}')
-            plt.legend()
-            plt.grid(True)
-            plt.show(block=False)
-
-    for r_plot in range(network.rows):
-        for c_plot in range(network.cols):
-            neuron_name = network.neurons[r_plot][c_plot].name
+    print(f"\n--- Starting Simulation ({num_steps} steps, {runtime}ms total) ---")
+    
+    # Enable interactive plotting
+    plt.ion()
+    
+    # Data collection for final plots
+    time_data = []
+    neuron_data = []
+    weight_data = []
+    
+    # Initialize data collection
+    for r in range(grid_rows):
+        neuron_row = []
+        for c in range(grid_cols):
+            neuron_row.append({
+                'voltage': [],
+                'activity': [],
+                'syn_input': [],
+                'state': [],
+                'P': [],
+                'B': []
+            })
+        neuron_data.append(neuron_row)
+    
+    # Track first connection for weight plotting
+    if len(network.connections) > 0:
+        target_connection = network.connections[0]
+        weight_data = []
+    
+    step = 0
+    try:
+        while h.t < runtime:
+            h.fadvance()
             
-            fig, axes = plt.subplots(6, 1, figsize=(14, 18), sharex=True) # Changed to 6 subplots
-            fig.suptitle(f'Dynamics for Neuron: {neuron_name}', fontsize=16)
-
-            P_data_curr = all_P_data_np[r_plot][c_plot]
-            B_data_curr = all_B_data_np[r_plot][c_plot]
-            syn_activity_level_data_curr = all_activity_data_np[r_plot][c_plot] # Activity_level STATE
-            syn_input_activity_data_curr = all_syn_input_activity_data_np[r_plot][c_plot] # Raw input from synapses
-            growth_data_curr = all_growth_data_np[r_plot][c_plot]
-            apop_data_curr = all_apop_data_np[r_plot][c_plot]
-            state_data_curr = all_state_data_np[r_plot][c_plot]
-            p75_data_curr = all_p75_data_np[r_plot][c_plot]
-            TrkB_data_curr = all_TrkB_data_np[r_plot][c_plot]
-            p75_pro_data_curr = all_p75_pro_data_np[r_plot][c_plot]
-            p75_B_data_curr = all_p75_B_data_np[r_plot][c_plot]
-            TrkB_B_data_curr = all_TrkB_B_data_np[r_plot][c_plot]
-            TrkB_pro_data_curr = all_TrkB_pro_data_np[r_plot][c_plot]
-            tPA_data_curr = all_tPA_data_np[r_plot][c_plot]
-
-
-            # Subplot 1: Pro/BDNF Dynamics
-            axes[0].plot(times, P_data_curr, label='proBDNF (P)')
-            axes[0].plot(times, B_data_curr, label='BDNF (B)')
-            axes[0].set_ylabel('Conc. (uM)')
-            axes[0].set_title('Pro/BDNF Dynamics')
-            axes[0].legend(loc='upper right')
-            axes[0].grid(True)
+            # Collect data every step
+            time_data.append(h.t)
             
-            # Subplot 2: Synaptic Activity Input & Activity Level State
-            axes[1].plot(times, syn_input_activity_data_curr, label='Raw Synaptic Input Activity', linestyle=':', color='orange')
-            axes[1].plot(times, syn_activity_level_data_curr, label='Activity Level (ODE State)', color='blue')
-            axes[1].set_ylabel('Activity (unitless)')
-            axes[1].set_title('Synaptic Activity Input & ODE Activity Level')
-            axes[1].legend(loc='upper right')
-            axes[1].grid(True)
-
-            # Subplot 3: Growth and Apoptosis Signals
-            axes[2].plot(times, growth_data_curr, label='Growth Strength (TrkB signals)', color='green')
-            axes[2].plot(times, apop_data_curr, label='Apoptosis Strength (p75 signals)', color='red')
-            axes[2].set_ylabel('Signal (0-1)')
-            axes[2].set_title('Growth/Apoptosis Signals')
-            axes[2].legend(loc='upper right')
-            axes[2].grid(True)
-
-            # Subplot 4: Normalized Neuron State
-            axes[3].plot(times, state_data_curr, label='Normalized Neuron State', color='purple')
-            axes[3].axhline(network.threshold_growth, color='gray', linestyle=':', label=f'Growth Threshold ({network.threshold_growth})')
-            axes[3].axhline(network.threshold_apoptosis, color='gray', linestyle=':', label=f'Apoptosis Threshold ({network.threshold_apoptosis})')
-            axes[3].set_ylabel('State (-1 to 1)')
-            axes[3].set_title('Normalized State')
-            axes[3].legend(loc='upper right')
-            axes[3].grid(True)
-
-            # Subplot 5: Free Receptor Concentrations (p75 & TrkB)
-            axes[4].plot(times, p75_data_curr, label='p75 Receptor')
-            axes[4].plot(times, TrkB_data_curr, label='TrkB Receptor')
-            axes[4].set_ylabel('Conc. (uM)')
-            axes[4].set_title('Free Receptor Concentrations')
-            axes[4].legend(loc='upper right')
-            axes[4].grid(True)
-
-            # Subplot 6: Receptor-Ligand Complex Concentrations & tPA
-            axes[5].plot(times, p75_pro_data_curr, label='p75-proBDNF Complex')
-            axes[5].plot(times, p75_B_data_curr, label='p75-BDNF Complex')
-            axes[5].plot(times, TrkB_B_data_curr, label='TrkB-BDNF Complex')
-            axes[5].plot(times, TrkB_pro_data_curr, label='TrkB-proBDNF Complex')
-            axes[5].plot(times, tPA_data_curr, label='tPA Enzyme', linestyle=':')
-            axes[5].set_xlabel('Time (seconds)')
-            axes[5].set_ylabel('Conc. (uM)')
-            axes[5].set_title('Complexes and tPA Dynamics')
-            axes[5].legend(loc='upper right')
-            axes[5].grid(True)
-
-            plt.tight_layout(rect=[0, 0.03, 1, 0.96])
-            plt.show(block=False)
-
-    if len(syn_weights_data) > 0:
-        plt.figure(figsize=(10, 5))
-        syn_label = f"Weight: {target_synapse_for_plotting['pre_neuron'].name} -> {target_synapse_for_plotting['post_neuron'].name}" if target_synapse_for_plotting else "Synaptic Weight"
-        plt.plot(times, syn_weights_data, label=syn_label, color='blue')
-        plt.xlabel('Time (seconds)')
-        plt.ylabel('Weight')
-        plt.title('Synaptic Weight Modulation (Selected Connection)')
-        plt.legend()
-        plt.grid(True)
-        plt.tight_layout()
-        plt.show(block=True)
+            for r in range(grid_rows):
+                for c in range(grid_cols):
+                    neuron = network.neurons[r][c]
+                    try:
+                        voltage = neuron.soma_segment.hoc.v
+                        activity = neuron.ode_mech.activity_level
+                        syn_input = neuron.ode_mech.syn_input_activity
+                        state = neuron.calculate_and_get_neuron_state()
+                        P = neuron.ode_mech.P
+                        B = neuron.ode_mech.B
+                        
+                        neuron_data[r][c]['voltage'].append(voltage)
+                        neuron_data[r][c]['activity'].append(activity)
+                        neuron_data[r][c]['syn_input'].append(syn_input)
+                        neuron_data[r][c]['state'].append(state)
+                        neuron_data[r][c]['P'].append(P)
+                        neuron_data[r][c]['B'].append(B)
+                    except Exception as e:
+                        print(f"Data collection error for {neuron.name}: {e}")
+            
+            # Collect weight data
+            if len(network.connections) > 0:
+                weight_data.append(target_connection['netcon_to_synapse'].weight[0])
+            
+            # Print network state at intervals
+            if step % print_interval == 0:
+                network.print_network_state(step, h.t)
+            
+            # Visualize network at intervals
+            if step % vis_interval == 0:
+                try:
+                    network.visualize_network(step, h.t, save_fig=False)
+                except Exception as e:
+                    print(f"Visualization error at step {step}: {e}")
+            
+            # Apply synaptic weight modulation
+            network.modulate_synaptic_weights()
+            
+            step += 1
+            
+    except KeyboardInterrupt:
+        print("\nSimulation interrupted by user")
+    except Exception as e:
+        print(f"\nSimulation error: {e}")
+    
+    print(f"\n--- Simulation Completed at t={h.t:.1f}ms ---")
+    
+    # Final state and visualization
+    network.print_network_state(step, h.t)
+    network.visualize_network(step, h.t, save_fig=False)
+    
+    # Create comprehensive final plots
+    print("\nGenerating final analysis plots...")
+    
+    times = np.array(time_data)
+    
+    # Plot 1: All neuron voltages
+    fig1, axes1 = plt.subplots(grid_rows, grid_cols, figsize=(15, 10), sharex=True, sharey=True)
+    fig1.suptitle('Membrane Potentials of All Neurons', fontsize=16)
+    
+    for r in range(grid_rows):
+        for c in range(grid_cols):
+            ax = axes1[r, c] if grid_rows > 1 else axes1[c]
+            voltages = np.array(neuron_data[r][c]['voltage'])
+            ax.plot(times, voltages, 'b-', linewidth=1)
+            ax.axhline(-20, color='r', linestyle='--', alpha=0.5, label='Spike threshold')
+            ax.set_title(f'Neuron ({r},{c})')
+            ax.grid(True, alpha=0.3)
+            if r == grid_rows-1:
+                ax.set_xlabel('Time (ms)')
+            if c == 0:
+                ax.set_ylabel('Voltage (mV)')
+    
+    plt.tight_layout()
+    plt.show(block=False)
+    
+    # Plot 2: Synaptic activity and states
+    fig2, axes2 = plt.subplots(2, 2, figsize=(15, 10))
+    fig2.suptitle('Network Activity and States', fontsize=16)
+    
+    # Synaptic inputs
+    axes2[0,0].set_title('Synaptic Input Activity')
+    for r in range(grid_rows):
+        for c in range(grid_cols):
+            syn_inputs = np.array(neuron_data[r][c]['syn_input'])
+            axes2[0,0].plot(times, syn_inputs, label=f'N({r},{c})')
+    axes2[0,0].set_ylabel('Synaptic Input')
+    axes2[0,0].legend()
+    axes2[0,0].grid(True)
+    
+    # Activity levels
+    axes2[0,1].set_title('Activity Levels (ODE States)')
+    for r in range(grid_rows):
+        for c in range(grid_cols):
+            activities = np.array(neuron_data[r][c]['activity'])
+            axes2[0,1].plot(times, activities, label=f'N({r},{c})')
+    axes2[0,1].set_ylabel('Activity Level')
+    axes2[0,1].legend()
+    axes2[0,1].grid(True)
+    
+    # Neuron states
+    axes2[1,0].set_title('Neuron States (Growth-Apoptosis)')
+    for r in range(grid_rows):
+        for c in range(grid_cols):
+            states = np.array(neuron_data[r][c]['state'])
+            axes2[1,0].plot(times, states, label=f'N({r},{c})')
+    axes2[1,0].axhline(network.threshold_growth, color='g', linestyle=':', alpha=0.7, label='Growth threshold')
+    axes2[1,0].axhline(network.threshold_apoptosis, color='r', linestyle=':', alpha=0.7, label='Apoptosis threshold')
+    axes2[1,0].set_ylabel('State')
+    axes2[1,0].set_xlabel('Time (ms)')
+    axes2[1,0].legend()
+    axes2[1,0].grid(True)
+    
+    # Synaptic weights
+    if len(weight_data) > 0:
+        axes2[1,1].set_title(f'Synaptic Weight Evolution\n({target_connection["pre_neuron"].name} → {target_connection["post_neuron"].name})')
+        axes2[1,1].plot(times[:len(weight_data)], weight_data, 'purple', linewidth=2)
+        axes2[1,1].set_ylabel('Synaptic Weight')
+        axes2[1,1].set_xlabel('Time (ms)')
+        axes2[1,1].grid(True)
     else:
-        print("Skipping synaptic weight plot: No synaptic weight data recorded or no connections found.")
-
-
-    # --- 12. Final Output Statements ---
-    print("\n--- Final Simulation Results ---")
-    for r_final in range(network.rows):
-        for c_final in range(network.cols):
-            neuron_obj_final = network.neurons[r_final][c_final]
-            print(f"\n--- For Neuron: {neuron_obj_final.name} ---")
-            final_conc = neuron_obj_final.get_concentrations()
-            for key, val in final_conc.items():
-                print(f"{key}: {val:.4e} uM")
-            print(f"Final Normalized Neuron State: {neuron_obj_final.calculate_and_get_neuron_state():.4f}")
-
-    if target_synapse_for_plotting:
-        print(f"\nFinal synaptic weight for {target_synapse_for_plotting['pre_neuron'].name} -> {target_synapse_for_plotting['post_neuron'].name}: {target_synapse_for_plotting['netcon_to_synapse'].weight[0]:.4f}")
-    else:
-        print("\nNo specific synapse weight to report final value for.")
-
-    print("\n--- Script Finished ---")
+        axes2[1,1].text(0.5, 0.5, 'No weight data available', ha='center', va='center', transform=axes2[1,1].transAxes)
+    
+    plt.tight_layout()
+    plt.show(block=False)
+    
+    # Plot 3: Neurotrophic factors
+    fig3, axes3 = plt.subplots(grid_rows, grid_cols, figsize=(15, 10))
+    fig3.suptitle('Neurotrophic Factors (proBDNF and BDNF)', fontsize=16)
+    
+    for r in range(grid_rows):
+        for c in range(grid_cols):
+            ax = axes3[r, c] if grid_rows > 1 else axes3[c]
+            P_data = np.array(neuron_data[r][c]['P'])
+            B_data = np.array(neuron_data[r][c]['B'])
+            ax.plot(times, P_data, 'r-', label='proBDNF', linewidth=2)
+            ax.plot(times, B_data, 'g-', label='BDNF', linewidth=2)
+            ax.set_title(f'Neuron ({r},{c})')
+            ax.set_ylabel('Concentration (μM)')
+            ax.legend()
+            ax.grid(True, alpha=0.3)
+            if r == grid_rows-1:
+                ax.set_xlabel('Time (ms)')
+    
+    plt.tight_layout()
+    plt.show()
+    
+    # Final summary
+    print(f"\n=== Final Network Summary ===")
+    for r in range(grid_rows):
+        for c in range(grid_cols):
+            neuron = network.neurons[r][c]
+            final_state = neuron.calculate_and_get_neuron_state()
+            final_P = neuron.ode_mech.P
+            final_B = neuron.ode_mech.B
+            final_activity = neuron.ode_mech.activity_level
+            print(f"{neuron.name}: State={final_state:.3f}, P={final_P:.3f}μM, B={final_B:.3f}μM, Activity={final_activity:.3f}")
+    
+    if len(network.connections) > 0:
+        print(f"\nFinal synaptic weights (sample):")
+        for i, conn in enumerate(network.connections[:4]):
+            weight = conn['netcon_to_synapse'].weight[0]
+            print(f"  {conn['pre_neuron'].name} → {conn['post_neuron'].name}: {weight:.4f}")
+    
+    print(f"\nSimulation completed successfully!")
+    
+    # Keep plots open
+    plt.ioff()
+    input("Press Enter to close all plots...")
+    plt.close('all')
+    

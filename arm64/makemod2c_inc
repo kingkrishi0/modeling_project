@@ -1,6 +1,6 @@
 ./ode_neuron.c: ../ode_neuron.mod
 	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
-	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "ode_neuron.mod" -o "/Users/ethan/documents/burise/modeling_project/arm64")
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "ode_neuron.mod" -o "/Users/ethan/Documents/BURise/modeling_project/arm64")
 
 ./ode_neuron.o: ./ode_neuron.c
 	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
@@ -8,7 +8,7 @@
 
 ./probabilistic_syn.c: ../probabilistic_syn.mod
 	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
-	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "probabilistic_syn.mod" -o "/Users/ethan/documents/burise/modeling_project/arm64")
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "probabilistic_syn.mod" -o "/Users/ethan/Documents/BURise/modeling_project/arm64")
 
 ./probabilistic_syn.o: ./probabilistic_syn.c
 	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"

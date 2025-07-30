@@ -12,8 +12,11 @@ class ODENeuron(Cell):
         super().__init__(name=name)
         
         self.soma = self.add_sec(name='soma', l=20, diam=20)
-
+        self.insert('pas')  # Insert passive mechanism
+        self.soma.g_pas = 0.00005  # Set leak conductance
+        self.soma.e_pas = -65 
         self.insert('ode_neuron')
+        self.soma.cm = 1.0  # Add this line
 
         self.soma_segment = self.soma(0.5)
 
@@ -99,6 +102,7 @@ class ODENeuron(Cell):
         self.stim.delay = delay
         self.stim.dur = dur
         self.stim.amp = amp
+        print(f"Added stim to {self.name}: {amp} nA from {delay}ms for {dur}ms")  # Add this line
 
     def update_activity_level(self, activity_value: float):
         """Method to update the activity level - you'll need to implement this"""
