@@ -4,15 +4,15 @@ import matplotlib.pyplot as plt
 
 """"
 # Amounts
-P(t) = proBDNF molar
-B(t) = BDNF molar
+P(t) = proBDNF molar (available)
+B(t) = BDNF molar (available)
 p75(t) = free p75 molar
 TrkB(t) = free TrkB molar
 p75_pro(t) = proBDNF-p75 complex molar
 p75_B(t) = BDNF-p75 complex molar
 TrkB_B(t) = BDNF-TrkB complex molar
 TrkB_pro(t) = proBDNF-TrkB complex molar
-tPA(t) = tPA enzymes molar
+tPA(t) = tPA enzymes molar (free)
 
 # K's
 ksP = synthesis rate of proBDNF M/time
@@ -28,7 +28,7 @@ k_degR2 = rate of TrkB degradation 1/time
 k_int_p75_pro = rate of proBDNF-p75 complex internalization 1/time
 k_int_p75_B = rate of BDNF-p75 complex internalization 1/time
 k_int_TrkB_B = rate of BDNF-TrkB complex internalization 1/time
-k_int_TrkB_pro = rate of proBDNF-TrkB complex internalization 1/time
+k_int_TrkB_pro = rate of proBDNF-TrkB complex internalization 1/time ****wb externalization? does that exist?
 
 # Affinities
 aff_p75_pro = 1.0  # Affinity of proBDNF for p75, assumed constant for simplicity
@@ -97,27 +97,27 @@ class ODEModel:
             activity_level = low_activity_value
         ksP_variable = ksP * activity_level
 
-        dP = ksP_variable - k_cleave * tPA * P - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degP * P
+        dP_dt = ksP_variable - k_cleave * tPA * P - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degP * P
         
-        dB = k_cleave * tPA * P - k_TrkB_B_on * aff_TrkB_B * B * TrkB + k_TrkB_B_off * TrkB_B - k_p75_B_on * aff_p75_B * B * p75 + k_p75_B_off * p75_B - k_degB * B
+        dB_dt = k_cleave * tPA * P - k_TrkB_B_on * aff_TrkB_B * B * TrkB + k_TrkB_B_off * TrkB_B - k_p75_B_on * aff_p75_B * B * p75 + k_p75_B_off * p75_B - k_degB * B
         
-        dp75 = ks_p75 - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_p75_B_on * aff_p75_B * B * p75 + k_p75_B_off * p75_B - k_degR1 * p75
+        dp75_dt = ks_p75 - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_p75_B_on * aff_p75_B * B * p75 + k_p75_B_off * p75_B - k_degR1 * p75
         
-        dTrkB = ks_TrkB - k_TrkB_B_on * aff_TrkB_B * B * TrkB + k_TrkB_B_off * TrkB_B - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degR2 * TrkB
+        dTrkB_dt = ks_TrkB - k_TrkB_B_on * aff_TrkB_B * B * TrkB + k_TrkB_B_off * TrkB_B - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degR2 * TrkB
         
-        dp75_pro = k_p75_pro_on * aff_p75_pro * P * p75 - k_p75_pro_off * p75_pro - k_int_p75_pro * p75_pro
+        dp75_pro_dt = k_p75_pro_on * aff_p75_pro * P * p75 - k_p75_pro_off * p75_pro - k_int_p75_pro * p75_pro
         
-        dp75_B = k_p75_B_on * aff_p75_B * B * p75 - k_p75_B_off * p75_B - k_int_p75_B * p75_B
+        dp75_B_dt = k_p75_B_on * aff_p75_B * B * p75 - k_p75_B_off * p75_B - k_int_p75_B * p75_B
         
-        dTrkB_B = k_TrkB_B_on * aff_TrkB_B * B * TrkB - k_TrkB_B_off * TrkB_B - k_int_TrkB_B * TrkB_B
+        dTrkB_B_dt = k_TrkB_B_on * aff_TrkB_B * B * TrkB - k_TrkB_B_off * TrkB_B - k_int_TrkB_B * TrkB_B
         
-        dTrkB_pro = k_TrkB_pro_on * aff_TrkB_pro * P * TrkB - k_TrkB_pro_off * TrkB_pro - k_int_TrkB_pro * TrkB_pro
+        dTrkB_pro_dt = k_TrkB_pro_on * aff_TrkB_pro * P * TrkB - k_TrkB_pro_off * TrkB_pro - k_int_TrkB_pro * TrkB_pro
         
-        dtPA = ks_tPA * activity_level - k_deg_tPA * tPA 
+        dtPA_dt = ks_tPA * activity_level - k_deg_tPA * tPA 
 
 
 
-        return [dP, dB, dp75, dTrkB, dp75_pro, dp75_B, dTrkB_B, dTrkB_pro, dtPA]
+        return [dP_dt, dB_dt, dp75_dt, dTrkB_dt, dp75_pro_dt, dp75_B_dt, dTrkB_B_dt, dTrkB_pro_dt, dtPA_dt]
     
     def solve(self, method, num_steps=1000):
         if method == 'manual':
@@ -130,9 +130,9 @@ class ODEModel:
             self.apop_strength_history = []
 
             for i in range(num_steps):
-                current_y = y[:, i]
-                dP, dB, dp75, dTrkB, dp75_pro, dp75_B, dTrkB_B, dTrkB_pro, dtPA = self.dYdt(times[i], current_y)
-                dydt = [dP, dB, dp75, dTrkB, dp75_pro, dp75_B, dTrkB_B, dTrkB_pro, dtPA]
+                current_y = y[:, i] # gets current concentrations; all variables (rows), ith column (time step)
+                dP_dt, dB_dt, dp75_dt, dTrkB_dt, dp75_pro_dt, dp75_B_dt, dTrkB_B_dt, dTrkB_pro_dt, dtPA_dt = self.dYdt(times[i], current_y)
+                dydt = [dP_dt, dB_dt, dp75_dt, dTrkB_dt, dp75_pro_dt, dp75_B_dt, dTrkB_B_dt, dTrkB_pro_dt, dtPA_dt]
                 y[:, i + 1] = current_y + np.array(dydt) * dt
 
                 conc_TrkB_B = current_y[6] # concentrations
@@ -249,7 +249,7 @@ x = []
 y = []
 for idx, t in enumerate(solution.t):
     derivatives = ODE_model.dYdt(t, solution.y[:, idx])
-    x.append(solution.y[1][idx])  # dP/dt
+    x.append(solution.y[1][idx])  # BDNF concentration
     y.append(derivatives[1])  # dB/dt
 
 plt.figure(figsize=(10, 6))
@@ -266,13 +266,13 @@ x = []
 y = []
 for idx, t in enumerate(solution.t):
     derivatives = ODE_model.dYdt(t, solution.y[:, idx])
-    x.append(solution.y[0][idx])  # dP/dt
-    y.append(derivatives[0])  # dB/dt
+    x.append(solution.y[0][idx])  # proBDNf
+    y.append(derivatives[0])  # dP/dt
 
 plt.figure(figsize=(10, 6))
 plt.scatter(x, y, c=solution.t, cmap='viridis', label='Derivative Trajectory')
-plt.xlabel('pBdNF')
-plt.ylabel('dP/dt (BDNF)')
+plt.xlabel('proBdNF')
+plt.ylabel('dP/dt (proBDNF)')
 plt.title('Transition of Derivatives Over Time')
 plt.colorbar(label='Time')
 plt.legend()
@@ -288,7 +288,7 @@ for idx, t in enumerate(solution.t):
 
 plt.figure(figsize=(10, 6))
 plt.scatter(x, y, c=solution.t, cmap='viridis', label='Derivative Trajectory')
-plt.xlabel('dP/dt')
+plt.xlabel('dP/dt (proBDNF)')
 plt.ylabel('dB/dt (BDNF)')
 plt.title('Transition of Derivatives Over Time')
 plt.colorbar(label='Time')
