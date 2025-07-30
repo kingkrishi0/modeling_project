@@ -1,3 +1,10 @@
+
+
+from neuron import h, nrn
+from neuronpp.cells.cell import Cell
+import numpy as np
+import os
+
 from neuron import h, nrn
 from neuronpp.cells.cell import Cell
 import numpy as np
@@ -15,76 +22,103 @@ class ODENeuron(Cell):
 
         self.ode_mech = self.soma_segment.get_mechanism(name='ode_neuron')
 
+        # Map NMODL STATE and ASSIGNED variables to Python PtrVecs for recording
+        self.P = h.PtrVec(1)
+        self.B = h.PtrVec(1)
+        self.p75 = h.PtrVec(1)
+        self.TrkB = h.PtrVec(1)
+        self.p75_pro = h.PtrVec(1)
+        self.p75_B = h.PtrVec(1)
+        self.TrkB_B = h.PtrVec(1)
+        self.TrkB_pro = h.PtrVec(1)
+        self.tPA = h.PtrVec(1)
+        self.activity_level_ref = h.PtrVec(1) # This is a STATE variable
+        self.v_ref = h.PtrVec(1) # For membrane potential
+        self.growth_strength_ref = h.PtrVec(1)
+        self.apop_strength_ref = h.PtrVec(1)
+        self.syn_input_activity_ref = h.PtrVec(1) # NEW: For reading syn_input_activity
+
+        self.P.record(self.ode_mech._ref_P)
+        self.B.record(self.ode_mech._ref_B)
+        self.p75.record(self.ode_mech._ref_p75)
+        self.TrkB.record(self.ode_mech._ref_TrkB)
+        self.p75_pro.record(self.ode_mech._ref_p75_pro)
+        self.p75_B.record(self.ode_mech._ref_p75_B)
+        self.TrkB_B.record(self.ode_mech._ref_TrkB_B)
+        self.TrkB_pro.record(self.ode_mech._ref_TrkB_pro)
+        self.tPA.record(self.ode_mech._ref_tPA)
+        self.activity_level_ref.record(self.ode_mech._ref_activity_level)
+        self.v_ref.record(self.soma_segment.hoc._ref_v) # Membrane potential is on the segment
+        self.growth_strength_ref.record(self.ode_mech._ref_growth_strength)
+        self.apop_strength_ref.record(self.ode_mech._ref_apop_strength)
+        self.syn_input_activity_ref.record(self.ode_mech._ref_syn_input_activity) # NEW RECORDING
+
+        # Initialize NMODL STATE variables with initial_concentrations
+        self.ode_mech.P = initial_concentrations[0]
+        self.ode_mech.B = initial_concentrations[1]
+        self.ode_mech.p75 = initial_concentrations[2]
+        self.ode_mech.TrkB = initial_concentrations[3]
+        self.ode_mech.p75_pro = initial_concentrations[4]
+        self.ode_mech.p75_B = initial_concentrations[5]
+        self.ode_mech.TrkB_B = initial_concentrations[6]
+        self.ode_mech.TrkB_pro = initial_concentrations[7]
+        self.ode_mech.tPA = initial_concentrations[8]
+        self.ode_mech.activity_level = 0.0 # Explicitly initialize
+        self.ode_mech.syn_input_activity = 0.0 # NEW: Explicitly initialize
 
 
-        
-        self.P = self.ode_mech._ref_P # proBDNF
-        self.B = self.ode_mech._ref_B # BDNF
-        self.p75 = self.ode_mech._ref_p75 # p75
-        self.TrkB = self.ode_mech._ref_TrkB # TrkB
-        self.p75_pro = self.ode_mech._ref_p75_pro # p75-proBDNF complex
-        self.p75_B = self.ode_mech._ref_p75_B # p75-BDNF complex
-        self.TrkB_B = self.ode_mech._ref_TrkB_B # TrkB-BDNF complex
-        self.TrkB_pro = self.ode_mech._ref_TrkB_pro # TrkB-proBDNF complex
-        self.tPA = self.ode_mech._ref_tPA # tPA enzyme
-
-        self.growth_strength_ref = self.ode_mech._ref_growth_strength
-        self.apop_strength_ref = self.ode_mech._ref_apop_strength
-        
-        self.activity_level_ref = self.ode_mech._ref_activity_level
-
-        state_vars = [
-            self.P, self.B, self.p75, self.TrkB,
-            self.p75_pro, self.p75_B, self.TrkB_B, self.TrkB_pro, self.tPA
-        ]
-
-        for i, val in enumerate(initial_concentrations):
-            state_vars[i][0] = val
+        # Set NMODL PARAMETER variables using the params list
         param_names = [
-            'ksP', "k_cleave", "k_p75_pro_on", "k_p75_pro_off", "k_degP", "k_TrkB_pro_on", "k_TrkB_pro_off", \
-            "k_TrkB_B_on", "k_TrkB_B_off", "k_degB", "k_p75_B_on", "k_p75_B_off", "k_degR1", "k_degR2", \
-            "k_int_p75_pro", "k_int_p75_B", "k_int_TrkB_B", "k_int_TrkB_pro", "aff_p75_pro", \
-            "aff_p75_B", "aff_TrkB_pro", "aff_TrkB_B", "k_deg_tPA", "ks_tPA", "ks_p75", "ks_TrkB"
+            "ksP", "k_cleave", "k_p75_pro_on", "k_p75_pro_off", "k_degP", "k_TrkB_pro_on", "k_TrkB_pro_off",
+            "k_TrkB_B_on", "k_TrkB_B_off", "k_degB", "k_p75_B_on", "k_p75_B_off", "k_degR1", "k_degR2",
+            "k_int_p75_pro", "k_int_p75_B", "k_int_TrkB_B", "k_int_TrkB_pro", "aff_p75_pro",
+            "aff_p75_B", "aff_TrkB_pro", "aff_TrkB_B", "k_deg_tPA", "ks_tPA", "ks_p75", "ks_TrkB",
+            "tau_activity", "activity_gain", "cm", "g_leak", "e_leak", "v_threshold_spike"
         ]
 
         for i, param_name in enumerate(param_names):
-            setattr(self.ode_mech, param_name, params[i])
+            if i < len(params):
+                setattr(self.ode_mech, param_name, params[i])
+            else:
+                print(f"Warning: Parameter '{param_name}' not found in provided params list for {self.name}. Using NMODL default.")
+
+        # Spike detector: fires when Vm crosses threshold
+        self.spike_detector = h.NetCon(self.soma_segment.hoc._ref_v, None, sec=self.soma.hoc)
+        self.spike_detector.threshold = self.ode_mech.v_threshold_spike
+        self.spike_detector.delay = 0.0 # Detect instantaneously
 
         self.neuron_state = 0.0
+        self.stim = None # For IClamp
 
-        print(f"CustomNeuron '{self.name}' initialized.")
+        print(f"ODENeuron '{self.name}' initialized.")
 
-    def update_activity_level(self, level: float):
-
-        if 0.0 <= level <= 120.0: 
-            self.activity_level_ref[0] = level
-        else:
-            print(f"Warning: Activity level {level} out of typical bounds (0-10). Setting to default.")
-            self.activity_level_ref[0] = 0.01
+    def add_external_current_stim(self, delay: float, dur: float, amp: float):
+        self.stim = h.IClamp(self.soma(0.5))
+        self.stim.delay = delay
+        self.stim.dur = dur
+        self.stim.amp = amp
 
     def calculate_and_get_neuron_state(self) -> float:
-        growth_strength = self.growth_strength_ref[0]
-        #print(f"Growth Strength: {growth_strength}")
-        apop_strength = self.apop_strength_ref[0]
-        #print(f"Apoptosis Strength: {apop_strength}")
-
+        growth_strength = self.ode_mech.growth_strength
+        apop_strength = self.ode_mech.apop_strength
         signal = growth_strength - apop_strength
-
         self.neuron_state = signal
-
         return self.neuron_state
     
     def get_concentrations(self) -> dict:
         return {
-            'P': self.P[0],
-            'B': self.B[0],
-            'p75': self.p75[0],
-            'TrkB': self.TrkB[0],
-            'p75_pro': self.p75_pro[0],
-            'p75_B': self.p75_B[0],
-            'TrkB_B': self.TrkB_B[0],
-            'TrkB_pro': self.TrkB_pro[0],
-            'tPA': self.tPA[0]
+            'P': self.ode_mech.P,
+            'B': self.ode_mech.B,
+            'p75': self.ode_mech.p75,
+            'TrkB': self.ode_mech.TrkB,
+            'p75_pro': self.ode_mech.p75_pro,
+            'p75_B': self.ode_mech.p75_B,
+            'TrkB_B': self.ode_mech.TrkB_B,
+            'TrkB_pro': self.ode_mech.TrkB_pro,
+            'tPA': self.ode_mech.tPA,
+            'activity_level': self.ode_mech.activity_level,
+            'syn_input_activity': self.ode_mech.syn_input_activity, # NEW: Include this
+            'v': self.soma_segment.hoc.v
         }
     
     def get_params(self) -> dict:
@@ -92,15 +126,17 @@ class ODENeuron(Cell):
             "ksP", "k_cleave", "k_p75_pro_on", "k_p75_pro_off", "k_degP", "k_TrkB_pro_on", "k_TrkB_pro_off",
             "k_TrkB_B_on", "k_TrkB_B_off", "k_degB", "k_p75_B_on", "k_p75_B_off", "k_degR1", "k_degR2",
             "k_int_p75_pro", "k_int_p75_B", "k_int_TrkB_B", "k_int_TrkB_pro", "aff_p75_pro",
-            "aff_p75_B", "aff_TrkB_pro", "aff_TrkB_B", "k_deg_tPA", "ks_tPA", "ks_p75", "ks_TrkB"
+            "aff_p75_B", "aff_TrkB_pro", "aff_TrkB_B", "k_deg_tPA", "ks_tPA", "ks_p75", "ks_TrkB",
+            "tau_activity", "activity_gain", "cm", "g_leak", "e_leak", "v_threshold_spike"
         ]
         
         param_dict = {}
-
         for param_name in param_names:
             param_dict[param_name] = getattr(self.ode_mech, param_name)
-
         return param_dict
+
+# The __main__ block for ODENeuron testing is now superseded by the network script
+# but can be kept for standalone testing of ODENeuron if desired.
     
 if __name__ == "__main__":
     # Ensure NEURON's working directory is set correctly for mod file compilation

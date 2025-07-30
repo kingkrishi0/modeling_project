@@ -1,13 +1,13 @@
 // mods/probabilistic_syn.mod
 // Based on NEURON's ExpSyn, but with probabilistic transmission
-// and an event sent to the postsynaptic ODENeuron for activity level update.
+// and directly writes to postsynaptic ODENeuron's activity input variable.
 
 NEURON {
     POINT_PROCESS ProbabilisticSyn
     RANGE tau, e, i, prob_factor
     NONSPECIFIC_CURRENT i
     GLOBAL _rng_seed : For reproducibility of random numbers
-    BBCOREPOINTER netcon_event_target : Pointer to a NetCon for sending event to ODENeuron
+    POINTER target_syn_input_activity : Pointer to the postsynaptic ODENeuron's syn_input_activity
 }
 
 PARAMETER {
@@ -15,6 +15,7 @@ PARAMETER {
     e = 0 (mV)       : reversal potential
     prob_factor = 0.5 : Base probability scaling (0 to 1)
     _rng_seed = 1234  : Seed for random number generator
+    activity_pulse_strength = 1.0 : How much a single successful event boosts syn_input_activity
 }
 
 ASSIGNED {
@@ -55,10 +56,8 @@ NET_RECEIVE(w (unitless)) {
     random_num = uniform(0, 1)
 
     : Calculate probability of transmission based on synaptic weight.
-    : A simple linear scaling: prob = weight * prob_factor
-    : Clamped between 0 and 1.
-    prob_threshold = event_weight * prob_factor * 2 // Multiply by 2 as initial_syn_weight is 0.5
-    prob_threshold = min(1.0, max(0.0, prob_threshold)) // Clamp between 0 and 1
+    prob_threshold = event_weight * prob_factor * 2 
+    prob_threshold = min(1.0, max(0.0, prob_threshold)) 
 
     if (random_num < prob_threshold) {
         // If transmission is successful:
@@ -66,10 +65,10 @@ NET_RECEIVE(w (unitless)) {
         G = G + event_weight * 0.05 // Scale weight to a reasonable conductance change (adjust 0.05)
                                     // This 0.05 (nS/unit) determines PSC amplitude. Tune this.
         
-        // 2. Send an event to the postsynaptic ODENeuron for activity level update
-        // The '1.0' argument is the 'weight_from_syn_event' in ODENeuron's NET_RECEIVE.
-        // This signifies a "successful event" to the ODE.
-        net_event(netcon_event_target, t + 0.1, 1.0) // 0.1ms fixed synaptic delay
+        // 2. Directly write to the postsynaptic ODENeuron's syn_input_activity variable
+        if (target_syn_input_activity) { // Check if pointer is valid
+            target_syn_input_activity = target_syn_input_activity + activity_pulse_strength
+        }
     }
 }
 

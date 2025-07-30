@@ -29,7 +29,7 @@ extern double hoc_Exp(double);
 #define nrn_jacob _nrn_jacob__ode_neuron
 #define nrn_state _nrn_state__ode_neuron
 #define _net_receive _net_receive__ode_neuron 
-#define integrate integrate__ode_neuron 
+#define states states__ode_neuron 
  
 #define _threadargscomma_ _p, _ppvar, _thread, _nt,
 #define _threadargsprotocomma_ double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt,
@@ -44,114 +44,124 @@ extern double hoc_Exp(double);
  
 #define t _nt->_t
 #define dt _nt->_dt
-#define ksP _p[0]
-#define ksP_columnindex 0
-#define k_cleave _p[1]
-#define k_cleave_columnindex 1
-#define k_p75_pro_on _p[2]
-#define k_p75_pro_on_columnindex 2
-#define k_p75_pro_off _p[3]
-#define k_p75_pro_off_columnindex 3
-#define k_degP _p[4]
-#define k_degP_columnindex 4
-#define k_TrkB_pro_on _p[5]
-#define k_TrkB_pro_on_columnindex 5
-#define k_TrkB_pro_off _p[6]
-#define k_TrkB_pro_off_columnindex 6
-#define k_TrkB_B_on _p[7]
-#define k_TrkB_B_on_columnindex 7
-#define k_TrkB_B_off _p[8]
-#define k_TrkB_B_off_columnindex 8
-#define k_degB _p[9]
-#define k_degB_columnindex 9
-#define k_p75_B_on _p[10]
-#define k_p75_B_on_columnindex 10
-#define k_p75_B_off _p[11]
-#define k_p75_B_off_columnindex 11
-#define k_degR1 _p[12]
-#define k_degR1_columnindex 12
-#define k_degR2 _p[13]
-#define k_degR2_columnindex 13
-#define k_int_p75_pro _p[14]
-#define k_int_p75_pro_columnindex 14
-#define k_int_p75_B _p[15]
-#define k_int_p75_B_columnindex 15
-#define k_int_TrkB_B _p[16]
-#define k_int_TrkB_B_columnindex 16
-#define k_int_TrkB_pro _p[17]
-#define k_int_TrkB_pro_columnindex 17
-#define aff_p75_pro _p[18]
-#define aff_p75_pro_columnindex 18
-#define aff_p75_B _p[19]
-#define aff_p75_B_columnindex 19
-#define aff_TrkB_pro _p[20]
-#define aff_TrkB_pro_columnindex 20
-#define aff_TrkB_B _p[21]
-#define aff_TrkB_B_columnindex 21
-#define k_deg_tPA _p[22]
-#define k_deg_tPA_columnindex 22
-#define ks_tPA _p[23]
-#define ks_tPA_columnindex 23
-#define ks_p75 _p[24]
-#define ks_p75_columnindex 24
-#define ks_TrkB _p[25]
-#define ks_TrkB_columnindex 25
-#define activity_level _p[26]
-#define activity_level_columnindex 26
-#define growth_strength _p[27]
-#define growth_strength_columnindex 27
-#define apop_strength _p[28]
-#define apop_strength_columnindex 28
-#define i _p[29]
-#define i_columnindex 29
-#define P _p[30]
-#define P_columnindex 30
-#define B _p[31]
-#define B_columnindex 31
-#define p75 _p[32]
-#define p75_columnindex 32
-#define TrkB _p[33]
-#define TrkB_columnindex 33
-#define p75_pro _p[34]
-#define p75_pro_columnindex 34
-#define p75_B _p[35]
-#define p75_B_columnindex 35
-#define TrkB_B _p[36]
-#define TrkB_B_columnindex 36
-#define TrkB_pro _p[37]
-#define TrkB_pro_columnindex 37
-#define tPA _p[38]
-#define tPA_columnindex 38
-#define ks_P_variable _p[39]
-#define ks_P_variable_columnindex 39
-#define ks_tPA_variable _p[40]
-#define ks_tPA_variable_columnindex 40
-#define ica _p[41]
-#define ica_columnindex 41
-#define DP _p[42]
-#define DP_columnindex 42
-#define DB _p[43]
-#define DB_columnindex 43
-#define Dp75 _p[44]
-#define Dp75_columnindex 44
-#define DTrkB _p[45]
-#define DTrkB_columnindex 45
-#define Dp75_pro _p[46]
-#define Dp75_pro_columnindex 46
-#define Dp75_B _p[47]
-#define Dp75_B_columnindex 47
-#define DTrkB_B _p[48]
-#define DTrkB_B_columnindex 48
-#define DTrkB_pro _p[49]
-#define DTrkB_pro_columnindex 49
-#define DtPA _p[50]
-#define DtPA_columnindex 50
-#define v _p[51]
-#define v_columnindex 51
-#define _g _p[52]
-#define _g_columnindex 52
-#define _ion_ica	*_ppvar[0]._pval
-#define _ion_dicadv	*_ppvar[1]._pval
+#define cm _p[0]
+#define cm_columnindex 0
+#define g_leak _p[1]
+#define g_leak_columnindex 1
+#define e_leak _p[2]
+#define e_leak_columnindex 2
+#define v_threshold_spike _p[3]
+#define v_threshold_spike_columnindex 3
+#define ksP _p[4]
+#define ksP_columnindex 4
+#define k_cleave _p[5]
+#define k_cleave_columnindex 5
+#define k_p75_pro_on _p[6]
+#define k_p75_pro_on_columnindex 6
+#define k_p75_pro_off _p[7]
+#define k_p75_pro_off_columnindex 7
+#define k_degP _p[8]
+#define k_degP_columnindex 8
+#define k_TrkB_pro_on _p[9]
+#define k_TrkB_pro_on_columnindex 9
+#define k_TrkB_pro_off _p[10]
+#define k_TrkB_pro_off_columnindex 10
+#define k_TrkB_B_on _p[11]
+#define k_TrkB_B_on_columnindex 11
+#define k_TrkB_B_off _p[12]
+#define k_TrkB_B_off_columnindex 12
+#define k_degB _p[13]
+#define k_degB_columnindex 13
+#define k_p75_B_on _p[14]
+#define k_p75_B_on_columnindex 14
+#define k_p75_B_off _p[15]
+#define k_p75_B_off_columnindex 15
+#define k_degR1 _p[16]
+#define k_degR1_columnindex 16
+#define k_degR2 _p[17]
+#define k_degR2_columnindex 17
+#define k_int_p75_pro _p[18]
+#define k_int_p75_pro_columnindex 18
+#define k_int_p75_B _p[19]
+#define k_int_p75_B_columnindex 19
+#define k_int_TrkB_B _p[20]
+#define k_int_TrkB_B_columnindex 20
+#define k_int_TrkB_pro _p[21]
+#define k_int_TrkB_pro_columnindex 21
+#define aff_p75_pro _p[22]
+#define aff_p75_pro_columnindex 22
+#define aff_p75_B _p[23]
+#define aff_p75_B_columnindex 23
+#define aff_TrkB_pro _p[24]
+#define aff_TrkB_pro_columnindex 24
+#define aff_TrkB_B _p[25]
+#define aff_TrkB_B_columnindex 25
+#define k_deg_tPA _p[26]
+#define k_deg_tPA_columnindex 26
+#define ks_tPA _p[27]
+#define ks_tPA_columnindex 27
+#define ks_p75 _p[28]
+#define ks_p75_columnindex 28
+#define ks_TrkB _p[29]
+#define ks_TrkB_columnindex 29
+#define growth_strength _p[30]
+#define growth_strength_columnindex 30
+#define apop_strength _p[31]
+#define apop_strength_columnindex 31
+#define syn_input_activity _p[32]
+#define syn_input_activity_columnindex 32
+#define P _p[33]
+#define P_columnindex 33
+#define B _p[34]
+#define B_columnindex 34
+#define p75 _p[35]
+#define p75_columnindex 35
+#define TrkB _p[36]
+#define TrkB_columnindex 36
+#define p75_pro _p[37]
+#define p75_pro_columnindex 37
+#define p75_B _p[38]
+#define p75_B_columnindex 38
+#define TrkB_B _p[39]
+#define TrkB_B_columnindex 39
+#define TrkB_pro _p[40]
+#define TrkB_pro_columnindex 40
+#define tPA _p[41]
+#define tPA_columnindex 41
+#define activity_level _p[42]
+#define activity_level_columnindex 42
+#define ica _p[43]
+#define ica_columnindex 43
+#define i _p[44]
+#define i_columnindex 44
+#define ks_P_variable _p[45]
+#define ks_P_variable_columnindex 45
+#define ks_tPA_variable _p[46]
+#define ks_tPA_variable_columnindex 46
+#define DP _p[47]
+#define DP_columnindex 47
+#define DB _p[48]
+#define DB_columnindex 48
+#define Dp75 _p[49]
+#define Dp75_columnindex 49
+#define DTrkB _p[50]
+#define DTrkB_columnindex 50
+#define Dp75_pro _p[51]
+#define Dp75_pro_columnindex 51
+#define Dp75_B _p[52]
+#define Dp75_B_columnindex 52
+#define DTrkB_B _p[53]
+#define DTrkB_B_columnindex 53
+#define DTrkB_pro _p[54]
+#define DTrkB_pro_columnindex 54
+#define DtPA _p[55]
+#define DtPA_columnindex 55
+#define Dactivity_level _p[56]
+#define Dactivity_level_columnindex 56
+#define v _p[57]
+#define v_columnindex 57
+#define _g _p[58]
+#define _g_columnindex 58
  
 #if MAC
 #if !defined(v)
@@ -206,11 +216,21 @@ extern void hoc_reg_nmodl_filename(int, const char*);
 #define Hill Hill_ode_neuron
  extern double Hill( _threadargsprotocomma_ double , double , double );
  /* declare global and static user variables */
+#define activity_gain activity_gain_ode_neuron
+ double activity_gain = 0.1;
+#define tau_activity tau_activity_ode_neuron
+ double tau_activity = 50;
  /* some parameters have upper and lower limits */
  static HocParmLimits _hoc_parm_limits[] = {
  0,0,0
 };
  static HocParmUnits _hoc_parm_units[] = {
+ "tau_activity_ode_neuron", "ms",
+ "activity_gain_ode_neuron", "unitless",
+ "cm_ode_neuron", "uF/cm2",
+ "g_leak_ode_neuron", "S/cm2",
+ "e_leak_ode_neuron", "mV",
+ "v_threshold_spike_ode_neuron", "mV",
  "ksP_ode_neuron", "uM/s",
  "k_cleave_ode_neuron", "1/s",
  "k_p75_pro_on_ode_neuron", "MS",
@@ -242,7 +262,8 @@ extern void hoc_reg_nmodl_filename(int, const char*);
  "TrkB_B_ode_neuron", "uM",
  "TrkB_pro_ode_neuron", "uM",
  "tPA_ode_neuron", "uM",
- "i_ode_neuron", "mA/cm2",
+ "activity_level_ode_neuron", "unitless",
+ "syn_input_activity_ode_neuron", "unitless",
  0,0
 };
  static double B0 = 0;
@@ -250,6 +271,7 @@ extern void hoc_reg_nmodl_filename(int, const char*);
  static double TrkB_pro0 = 0;
  static double TrkB_B0 = 0;
  static double TrkB0 = 0;
+ static double activity_level0 = 0;
  static double delta_t = 0.01;
  static double p75_B0 = 0;
  static double p75_pro0 = 0;
@@ -257,6 +279,8 @@ extern void hoc_reg_nmodl_filename(int, const char*);
  static double tPA0 = 0;
  /* connect global user variables to hoc */
  static DoubScal hoc_scdoub[] = {
+ "tau_activity_ode_neuron", &tau_activity_ode_neuron,
+ "activity_gain_ode_neuron", &activity_gain_ode_neuron,
  0,0
 };
  static DoubVec hoc_vdoub[] = {
@@ -274,12 +298,16 @@ static void _ode_map(int, double**, double**, double*, Datum*, double*, int);
 static void _ode_spec(NrnThread*, _Memb_list*, int);
 static void _ode_matsol(NrnThread*, _Memb_list*, int);
  
-#define _cvode_ieq _ppvar[2]._i
+#define _cvode_ieq _ppvar[0]._i
  static void _ode_matsol_instance1(_threadargsproto_);
  /* connect range variables in _p that hoc is supposed to know about */
  static const char *_mechanism[] = {
  "7.7.0",
 "ode_neuron",
+ "cm_ode_neuron",
+ "g_leak_ode_neuron",
+ "e_leak_ode_neuron",
+ "v_threshold_spike_ode_neuron",
  "ksP_ode_neuron",
  "k_cleave_ode_neuron",
  "k_p75_pro_on_ode_neuron",
@@ -306,11 +334,10 @@ static void _ode_matsol(NrnThread*, _Memb_list*, int);
  "ks_tPA_ode_neuron",
  "ks_p75_ode_neuron",
  "ks_TrkB_ode_neuron",
- "activity_level_ode_neuron",
  0,
  "growth_strength_ode_neuron",
  "apop_strength_ode_neuron",
- "i_ode_neuron",
+ "syn_input_activity_ode_neuron",
  0,
  "P_ode_neuron",
  "B_ode_neuron",
@@ -321,17 +348,21 @@ static void _ode_matsol(NrnThread*, _Memb_list*, int);
  "TrkB_B_ode_neuron",
  "TrkB_pro_ode_neuron",
  "tPA_ode_neuron",
+ "activity_level_ode_neuron",
  0,
  0};
- static Symbol* _ca_sym;
  
 extern Prop* need_memb(Symbol*);
 
 static void nrn_alloc(Prop* _prop) {
 	Prop *prop_ion;
 	double *_p; Datum *_ppvar;
- 	_p = nrn_prop_data_alloc(_mechtype, 53, _prop);
+ 	_p = nrn_prop_data_alloc(_mechtype, 59, _prop);
  	/*initialize range parameters*/
+ 	cm = 1;
+ 	g_leak = 0.0001;
+ 	e_leak = -65;
+ 	v_threshold_spike = -20;
  	ksP = 0.005;
  	k_cleave = 0.01;
  	k_p75_pro_on = 1;
@@ -358,15 +389,11 @@ static void nrn_alloc(Prop* _prop) {
  	ks_tPA = 0.0001;
  	ks_p75 = 0.0001;
  	ks_TrkB = 1e-05;
- 	activity_level = 1;
  	_prop->param = _p;
- 	_prop->param_size = 53;
- 	_ppvar = nrn_prop_datum_alloc(_mechtype, 3, _prop);
+ 	_prop->param_size = 59;
+ 	_ppvar = nrn_prop_datum_alloc(_mechtype, 1, _prop);
  	_prop->dparam = _ppvar;
  	/*connect ionic variables to this model*/
- prop_ion = need_memb(_ca_sym);
- 	_ppvar[0]._pval = &prop_ion->param[3]; /* ica */
- 	_ppvar[1]._pval = &prop_ion->param[4]; /* _ion_dicadv */
  
 }
  static void _initlists();
@@ -375,9 +402,6 @@ static void nrn_alloc(Prop* _prop) {
  static HocStateTolerance _hoc_state_tol[] = {
  0,0
 };
- static void _thread_mem_init(Datum*);
- static void _thread_cleanup(Datum*);
- static void _update_ion_pointer(Datum*);
  extern Symbol* hoc_lookup(const char*);
 extern void _nrn_thread_reg(int, int, void(*)(Datum*));
 extern void _nrn_thread_table_reg(int, void(*)(double*, Datum*, Datum*, NrnThread*, int));
@@ -387,24 +411,15 @@ extern void _cvode_abstol( Symbol**, double*, int);
  void _ode_neuron_reg() {
 	int _vectorized = 1;
   _initlists();
- 	ion_reg("ca", -10000.);
- 	_ca_sym = hoc_lookup("ca_ion");
- 	register_mech(_mechanism, nrn_alloc,nrn_cur, nrn_jacob, nrn_state, nrn_init, hoc_nrnpointerindex, 5);
-  _extcall_thread = (Datum*)ecalloc(4, sizeof(Datum));
-  _thread_mem_init(_extcall_thread);
+ 	register_mech(_mechanism, nrn_alloc,nrn_cur, nrn_jacob, nrn_state, nrn_init, hoc_nrnpointerindex, 1);
  _mechtype = nrn_get_mechtype(_mechanism[1]);
      _nrn_setdata_reg(_mechtype, _setdata);
-     _nrn_thread_reg(_mechtype, 1, _thread_mem_init);
-     _nrn_thread_reg(_mechtype, 0, _thread_cleanup);
-     _nrn_thread_reg(_mechtype, 2, _update_ion_pointer);
  #if NMODL_TEXT
   hoc_reg_nmodl_text(_mechtype, nmodl_file_text);
   hoc_reg_nmodl_filename(_mechtype, nmodl_filename);
 #endif
-  hoc_register_prop_size(_mechtype, 53, 3);
-  hoc_register_dparam_semantics(_mechtype, 0, "ca_ion");
-  hoc_register_dparam_semantics(_mechtype, 1, "ca_ion");
-  hoc_register_dparam_semantics(_mechtype, 2, "cvodeieq");
+  hoc_register_prop_size(_mechtype, 59, 1);
+  hoc_register_dparam_semantics(_mechtype, 0, "cvodeieq");
  	hoc_register_cvode(_mechtype, _ode_count, _ode_map, _ode_spec, _ode_matsol);
  	hoc_register_tolerance(_mechtype, _hoc_state_tol, &_atollist);
  	hoc_register_var(hoc_scdoub, hoc_vdoub, hoc_intfunc);
@@ -420,16 +435,10 @@ static int _ninits = 0;
 static int _match_recurse=1;
 static void _modl_cleanup(){ _match_recurse=1;}
  
-#define _deriv1_advance _thread[0]._i
-#define _dith1 1
-#define _recurse _thread[2]._i
-#define _newtonspace1 _thread[3]._pvoid
- 
 static int _ode_spec1(_threadargsproto_);
 /*static int _ode_matsol1(_threadargsproto_);*/
- static int _slist2[9];
-  static int _slist1[9], _dlist1[9];
- static int integrate(_threadargsproto_);
+ static int _slist1[10], _dlist1[10];
+ static int states(_threadargsproto_);
  
 /*CVODE*/
  static int _ode_spec1 (double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt) {int _reset = 0; {
@@ -442,6 +451,7 @@ static int _ode_spec1(_threadargsproto_);
    DTrkB_B = k_TrkB_B_on * aff_TrkB_B * B * TrkB - k_TrkB_B_off * TrkB_B - k_int_TrkB_B * TrkB_B ;
    DTrkB_pro = k_TrkB_pro_on * aff_TrkB_pro * P * TrkB - k_TrkB_pro_off * TrkB_pro - k_int_TrkB_pro * TrkB_pro ;
    DtPA = ks_tPA_variable - k_deg_tPA * tPA ;
+   Dactivity_level = - activity_level / tau_activity + syn_input_activity ;
    }
  return _reset;
 }
@@ -455,36 +465,24 @@ static int _ode_spec1(_threadargsproto_);
  DTrkB_B = DTrkB_B  / (1. - dt*( ( - ( k_TrkB_B_off )*( 1.0 ) ) - ( k_int_TrkB_B )*( 1.0 ) )) ;
  DTrkB_pro = DTrkB_pro  / (1. - dt*( ( - ( k_TrkB_pro_off )*( 1.0 ) ) - ( k_int_TrkB_pro )*( 1.0 ) )) ;
  DtPA = DtPA  / (1. - dt*( ( - ( k_deg_tPA )*( 1.0 ) ) )) ;
+ Dactivity_level = Dactivity_level  / (1. - dt*( ( - 1.0 ) / tau_activity )) ;
   return 0;
 }
  /*END CVODE*/
- 
-static int integrate (double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt) {int _reset=0; int error = 0;
- { double* _savstate1 = _thread[_dith1]._pval;
- double* _dlist2 = _thread[_dith1]._pval + 9;
- int _counte = -1;
- if (!_recurse) {
- _recurse = 1;
- {int _id; for(_id=0; _id < 9; _id++) { _savstate1[_id] = _p[_slist1[_id]];}}
- error = nrn_newton_thread(_newtonspace1, 9,_slist2, _p, integrate, _dlist2, _ppvar, _thread, _nt);
- _recurse = 0; if(error) {abort_run(error);}}
- {
-   DP = ks_P_variable - k_cleave * tPA * P - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degP * P ;
-   DB = k_cleave * tPA * P - k_TrkB_B_on * aff_TrkB_B * B * TrkB + k_TrkB_B_off * TrkB_B - k_p75_B_on * aff_p75_B * B * p75 + k_p75_B_off * p75_B - k_degB * B ;
-   Dp75 = ks_p75 - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_p75_B_on * aff_p75_B * B * p75 + k_p75_B_off * p75_B - k_degR1 * p75 ;
-   DTrkB = ks_TrkB - k_TrkB_B_on * aff_TrkB_B * B * TrkB + k_TrkB_B_off * TrkB_B - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degR2 * TrkB ;
-   Dp75_pro = k_p75_pro_on * aff_p75_pro * P * p75 - k_p75_pro_off * p75_pro - k_int_p75_pro * p75_pro ;
-   Dp75_B = k_p75_B_on * aff_p75_B * B * p75 - k_p75_B_off * p75_B - k_int_p75_B * p75_B ;
-   DTrkB_B = k_TrkB_B_on * aff_TrkB_B * B * TrkB - k_TrkB_B_off * TrkB_B - k_int_TrkB_B * TrkB_B ;
-   DTrkB_pro = k_TrkB_pro_on * aff_TrkB_pro * P * TrkB - k_TrkB_pro_off * TrkB_pro - k_int_TrkB_pro * TrkB_pro ;
-   DtPA = ks_tPA_variable - k_deg_tPA * tPA ;
-   {int _id; for(_id=0; _id < 9; _id++) {
-if (_deriv1_advance) {
- _dlist2[++_counte] = _p[_dlist1[_id]] - (_p[_slist1[_id]] - _savstate1[_id])/dt;
- }else{
-_dlist2[++_counte] = _p[_slist1[_id]] - _savstate1[_id];}}}
- } }
- return _reset;}
+ static int states (double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt) { {
+    P = P + (1. - exp(dt*(( - ( k_cleave * tPA )*( 1.0 ) ) - ( ( k_p75_pro_on * aff_p75_pro )*( 1.0 ) )*( p75 ) - ( ( k_TrkB_pro_on * aff_TrkB_pro )*( 1.0 ) )*( TrkB ) - ( k_degP )*( 1.0 ))))*(- ( ks_P_variable + ( k_p75_pro_off )*( p75_pro ) + ( k_TrkB_pro_off )*( TrkB_pro ) ) / ( ( - ( ( k_cleave )*( tPA ) )*( 1.0 ) ) - ( ( ( k_p75_pro_on )*( aff_p75_pro ) )*( 1.0 ) )*( p75 ) - ( ( ( k_TrkB_pro_on )*( aff_TrkB_pro ) )*( 1.0 ) )*( TrkB ) - ( k_degP )*( 1.0 ) ) - P) ;
+    B = B + (1. - exp(dt*(( - ( ( k_TrkB_B_on * aff_TrkB_B )*( 1.0 ) )*( TrkB ) ) - ( ( k_p75_B_on * aff_p75_B )*( 1.0 ) )*( p75 ) - ( k_degB )*( 1.0 ))))*(- ( ( ( k_cleave )*( tPA ) )*( P ) + ( k_TrkB_B_off )*( TrkB_B ) + ( k_p75_B_off )*( p75_B ) ) / ( ( - ( ( ( k_TrkB_B_on )*( aff_TrkB_B ) )*( 1.0 ) )*( TrkB ) ) - ( ( ( k_p75_B_on )*( aff_p75_B ) )*( 1.0 ) )*( p75 ) - ( k_degB )*( 1.0 ) ) - B) ;
+    p75 = p75 + (1. - exp(dt*(( - ( k_p75_pro_on * aff_p75_pro * P )*( 1.0 ) ) - ( k_p75_B_on * aff_p75_B * B )*( 1.0 ) - ( k_degR1 )*( 1.0 ))))*(- ( ks_p75 + ( k_p75_pro_off )*( p75_pro ) + ( k_p75_B_off )*( p75_B ) ) / ( ( - ( ( ( k_p75_pro_on )*( aff_p75_pro ) )*( P ) )*( 1.0 ) ) - ( ( ( k_p75_B_on )*( aff_p75_B ) )*( B ) )*( 1.0 ) - ( k_degR1 )*( 1.0 ) ) - p75) ;
+    TrkB = TrkB + (1. - exp(dt*(( - ( k_TrkB_B_on * aff_TrkB_B * B )*( 1.0 ) ) - ( k_TrkB_pro_on * aff_TrkB_pro * P )*( 1.0 ) - ( k_degR2 )*( 1.0 ))))*(- ( ks_TrkB + ( k_TrkB_B_off )*( TrkB_B ) + ( k_TrkB_pro_off )*( TrkB_pro ) ) / ( ( - ( ( ( k_TrkB_B_on )*( aff_TrkB_B ) )*( B ) )*( 1.0 ) ) - ( ( ( k_TrkB_pro_on )*( aff_TrkB_pro ) )*( P ) )*( 1.0 ) - ( k_degR2 )*( 1.0 ) ) - TrkB) ;
+    p75_pro = p75_pro + (1. - exp(dt*(( - ( k_p75_pro_off )*( 1.0 ) ) - ( k_int_p75_pro )*( 1.0 ))))*(- ( ( ( ( k_p75_pro_on )*( aff_p75_pro ) )*( P ) )*( p75 ) ) / ( ( - ( k_p75_pro_off )*( 1.0 ) ) - ( k_int_p75_pro )*( 1.0 ) ) - p75_pro) ;
+    p75_B = p75_B + (1. - exp(dt*(( - ( k_p75_B_off )*( 1.0 ) ) - ( k_int_p75_B )*( 1.0 ))))*(- ( ( ( ( k_p75_B_on )*( aff_p75_B ) )*( B ) )*( p75 ) ) / ( ( - ( k_p75_B_off )*( 1.0 ) ) - ( k_int_p75_B )*( 1.0 ) ) - p75_B) ;
+    TrkB_B = TrkB_B + (1. - exp(dt*(( - ( k_TrkB_B_off )*( 1.0 ) ) - ( k_int_TrkB_B )*( 1.0 ))))*(- ( ( ( ( k_TrkB_B_on )*( aff_TrkB_B ) )*( B ) )*( TrkB ) ) / ( ( - ( k_TrkB_B_off )*( 1.0 ) ) - ( k_int_TrkB_B )*( 1.0 ) ) - TrkB_B) ;
+    TrkB_pro = TrkB_pro + (1. - exp(dt*(( - ( k_TrkB_pro_off )*( 1.0 ) ) - ( k_int_TrkB_pro )*( 1.0 ))))*(- ( ( ( ( k_TrkB_pro_on )*( aff_TrkB_pro ) )*( P ) )*( TrkB ) ) / ( ( - ( k_TrkB_pro_off )*( 1.0 ) ) - ( k_int_TrkB_pro )*( 1.0 ) ) - TrkB_pro) ;
+    tPA = tPA + (1. - exp(dt*(( - ( k_deg_tPA )*( 1.0 ) ))))*(- ( ks_tPA_variable ) / ( ( - ( k_deg_tPA )*( 1.0 ) ) ) - tPA) ;
+    activity_level = activity_level + (1. - exp(dt*(( - 1.0 ) / tau_activity)))*(- ( syn_input_activity ) / ( ( - 1.0 ) / tau_activity ) - activity_level) ;
+   }
+  return 0;
+}
  
 double Hill ( _threadargsprotocomma_ double _lC , double _lKD , double _ln ) {
    double _lHill;
@@ -503,7 +501,7 @@ static void _hoc_Hill(void) {
  hoc_retpushx(_r);
 }
  
-static int _ode_count(int _type){ return 9;}
+static int _ode_count(int _type){ return 10;}
  
 static void _ode_spec(NrnThread* _nt, _Memb_list* _ml, int _type) {
    double* _p; Datum* _ppvar; Datum* _thread;
@@ -514,15 +512,14 @@ static void _ode_spec(NrnThread* _nt, _Memb_list* _ml, int _type) {
     _p = _ml->_data[_iml]; _ppvar = _ml->_pdata[_iml];
     _nd = _ml->_nodelist[_iml];
     v = NODEV(_nd);
-  ica = _ion_ica;
      _ode_spec1 (_p, _ppvar, _thread, _nt);
-  }}
+ }}
  
 static void _ode_map(int _ieq, double** _pv, double** _pvdot, double* _pp, Datum* _ppd, double* _atol, int _type) { 
 	double* _p; Datum* _ppvar;
  	int _i; _p = _pp; _ppvar = _ppd;
 	_cvode_ieq = _ieq;
-	for (_i=0; _i < 9; ++_i) {
+	for (_i=0; _i < 10; ++_i) {
 		_pv[_i] = _pp + _slist1[_i];  _pvdot[_i] = _pp + _dlist1[_i];
 		_cvode_abstol(_atollist, _atol, _i);
 	}
@@ -541,24 +538,8 @@ static void _ode_matsol(NrnThread* _nt, _Memb_list* _ml, int _type) {
     _p = _ml->_data[_iml]; _ppvar = _ml->_pdata[_iml];
     _nd = _ml->_nodelist[_iml];
     v = NODEV(_nd);
-  ica = _ion_ica;
  _ode_matsol_instance1(_threadargs_);
  }}
- 
-static void _thread_mem_init(Datum* _thread) {
-   _thread[_dith1]._pval = (double*)ecalloc(18, sizeof(double));
-   _newtonspace1 = nrn_cons_newtonspace(9);
- }
- 
-static void _thread_cleanup(Datum* _thread) {
-   free((void*)(_thread[_dith1]._pval));
-   nrn_destroy_newtonspace(_newtonspace1);
- }
- extern void nrn_update_ion_pointer(Symbol*, Datum*, int, int);
- static void _update_ion_pointer(Datum* _ppvar) {
-   nrn_update_ion_pointer(_ca_sym, _ppvar, 0, 3);
-   nrn_update_ion_pointer(_ca_sym, _ppvar, 1, 4);
- }
 
 static void initmodel(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt) {
   int _i; double _save;{
@@ -567,6 +548,7 @@ static void initmodel(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt)
   TrkB_pro = TrkB_pro0;
   TrkB_B = TrkB_B0;
   TrkB = TrkB0;
+  activity_level = activity_level0;
   p75_B = p75_B0;
   p75_pro = p75_pro0;
   p75 = p750;
@@ -581,6 +563,8 @@ static void initmodel(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt)
    TrkB_B = 0.0 ;
    TrkB_pro = 0.0 ;
    tPA = 0.1 ;
+   activity_level = 0.0 ;
+   syn_input_activity = 0.0 ;
    ica = 0.0 ;
    i = 0.0 ;
    }
@@ -608,20 +592,11 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
     _v = NODEV(_nd);
   }
  v = _v;
-  ica = _ion_ica;
  initmodel(_p, _ppvar, _thread, _nt);
- }
+}
 }
 
-static double _nrn_current(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt, double _v){double _current=0.;v=_v;{ {
-   ks_P_variable = ksP * activity_level ;
-   ks_tPA_variable = ks_tPA * activity_level ;
-   growth_strength = ( Hill ( _threadargscomma_ TrkB_B , 0.05 , 2.0 ) + Hill ( _threadargscomma_ TrkB_pro , 0.02 , 2.0 ) ) / 2.0 ;
-   apop_strength = ( Hill ( _threadargscomma_ p75_pro , 0.02 , 2.0 ) + Hill ( _threadargscomma_ p75_B , 0.02 , 2.0 ) ) / 2.0 ;
-   }
- _current += ica;
- _current += i;
-
+static double _nrn_current(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt, double _v){double _current=0.;v=_v;{
 } return _current;
 }
 
@@ -643,24 +618,6 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
   {
     _nd = _ml->_nodelist[_iml];
     _v = NODEV(_nd);
-  }
-  ica = _ion_ica;
-if (_nt->_vcv) { _ode_spec1(_p, _ppvar, _thread, _nt); }
- _g = _nrn_current(_p, _ppvar, _thread, _nt, _v + .001);
- 	{ double _dica;
-  _dica = ica;
- _rhs = _nrn_current(_p, _ppvar, _thread, _nt, _v);
-  _ion_dicadv += (_dica - ica)/.001 ;
- 	}
- _g = (_g - _rhs)/.001;
-  _ion_ica += ica ;
-#if CACHEVEC
-  if (use_cachevec) {
-	VEC_RHS(_ni[_iml]) -= _rhs;
-  }else
-#endif
-  {
-	NODERHS(_nd) -= _rhs;
   }
  
 }
@@ -694,8 +651,6 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
 static void nrn_state(NrnThread* _nt, _Memb_list* _ml, int _type) {
 double* _p; Datum* _ppvar; Datum* _thread;
 Node *_nd; double _v = 0.0; int* _ni; int _iml, _cntml;
-double _dtsav = dt;
-if (secondorder) { dt *= 0.5; }
 #if CACHEVEC
     _ni = _ml->_nodeindices;
 #endif
@@ -715,17 +670,16 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
   }
  v=_v;
 {
-  ica = _ion_ica;
- {  _deriv1_advance = 1;
- derivimplicit_thread(9, _slist1, _dlist1, _p, integrate, _ppvar, _thread, _nt);
-_deriv1_advance = 0;
-     if (secondorder) {
-    int _i;
-    for (_i = 0; _i < 9; ++_i) {
-      _p[_slist1[_i]] += dt*_p[_dlist1[_i]];
-    }}
- } }}
- dt = _dtsav;
+ {   states(_p, _ppvar, _thread, _nt);
+  } {
+   i = g_leak * ( e_leak - v ) ;
+   ks_P_variable = ksP * ( 1.0 + activity_level ) ;
+   ks_tPA_variable = ks_tPA * ( 1.0 + activity_level ) ;
+   growth_strength = ( Hill ( _threadargscomma_ TrkB_B , 0.05 , 2.0 ) + Hill ( _threadargscomma_ TrkB_pro , 0.02 , 2.0 ) ) / 2.0 ;
+   apop_strength = ( Hill ( _threadargscomma_ p75_pro , 0.02 , 2.0 ) + Hill ( _threadargscomma_ p75_B , 0.02 , 2.0 ) ) / 2.0 ;
+   }
+}}
+
 }
 
 static void terminal(){}
@@ -743,15 +697,7 @@ static void _initlists(){
  _slist1[6] = TrkB_B_columnindex;  _dlist1[6] = DTrkB_B_columnindex;
  _slist1[7] = TrkB_pro_columnindex;  _dlist1[7] = DTrkB_pro_columnindex;
  _slist1[8] = tPA_columnindex;  _dlist1[8] = DtPA_columnindex;
- _slist2[0] = B_columnindex;
- _slist2[1] = P_columnindex;
- _slist2[2] = TrkB_pro_columnindex;
- _slist2[3] = TrkB_B_columnindex;
- _slist2[4] = TrkB_columnindex;
- _slist2[5] = p75_B_columnindex;
- _slist2[6] = p75_pro_columnindex;
- _slist2[7] = p75_columnindex;
- _slist2[8] = tPA_columnindex;
+ _slist1[9] = activity_level_columnindex;  _dlist1[9] = Dactivity_level_columnindex;
 _first = 0;
 }
 
@@ -762,6 +708,22 @@ _first = 0;
 #if NMODL_TEXT
 static const char* nmodl_filename = "/Users/ethan/Documents/BURise/modeling_project/ode_neuron.mod";
 static const char* nmodl_file_text = 
+  ": mods/ode_neuron.mod\n"
+  "NEURON {\n"
+  "    SUFFIX ode_neuron\n"
+  "    RANGE g_leak, e_leak, cm\n"
+  "    RANGE P, B, p75, TrkB, p75_pro, p75_B, TrkB_B, TrkB_pro, tPA\n"
+  "    RANGE ksP, k_cleave, k_p75_pro_on, k_p75_pro_off, k_degP, k_TrkB_pro_on, k_TrkB_pro_off\n"
+  "    RANGE k_TrkB_B_on, k_TrkB_B_off, k_degB, k_p75_B_on, k_p75_B_off, k_degR1, k_degR2\n"
+  "    RANGE k_int_p75_pro, k_int_p75_B, k_int_TrkB_B, k_int_TrkB_pro, aff_p75_pro\n"
+  "    RANGE aff_p75_B, aff_TrkB_pro, aff_TrkB_B, k_deg_tPA, ks_tPA, ks_p75, ks_TrkB\n"
+  "    RANGE activity_level\n"
+  "    RANGE v_threshold_spike\n"
+  "    RANGE growth_strength, apop_strength\n"
+  "    RANGE syn_input_activity\n"
+  "    THREADSAFE\n"
+  "}\n"
+  "\n"
   "UNITS {\n"
   "    (molar) = (1)\n"
   "    (mM) = (millimolar)\n"
@@ -770,61 +732,62 @@ static const char* nmodl_file_text =
   "    (pM) = (picomolar)\n"
   "    (mS) = (millisiemens)\n"
   "    (MS) = (1/ micromolar 1/ second)\n"
+  "    (nA) = (nanoamp)\n"
+  "    (mV) = (millivolt)\n"
+  "    (uF) = (microfarad)\n"
   "}\n"
   "\n"
   "PARAMETER {\n"
-  "    ksP = 5.0e-3 (uM/s)   : ksP (synthesis rate of proBDNF)\n"
-  "    k_cleave = 0.01 (1/s)    : k_cleave (rate of proBDNF cleavage into BDNF)\n"
-  "    k_p75_pro_on = 1.0 (MS)    : k_p75_pro_on (proBDNF binding to p75)\n"
-  "    k_p75_pro_off = 0.9 (1/s)    : k_p75_pro_off (proBDNF unbinding from p75)\n"
-  "    k_degP = 5.0e-4 (1/s)   : k_degP (proBDNF degradation )\n"
-  "    k_TrkB_pro_on = 0.2 (MS)    : k_TrkB_pro_on (proBDNF binding to TrkB)\n"
-  "    k_TrkB_pro_off = 0.1 (1/s)   : k_TrkB_pro_off (proBDNF unbinding from TrkB)\n"
-  "    k_TrkB_B_on = 1.0 (MS)    : k_TrkB_B_on (BDNF binding to TrkB)\n"
-  "    k_TrkB_B_off = 0.9 (1/s)    : k_TrkB_B_off (BDNF unbinding from TrkB)\n"
-  "    k_degB = 0.005 (1/s)    : k_degB (BDNF degradation)\n"
-  "    k_p75_B_on = 0.3 (MS)    : k_p75_B_on (BDNF binding to p75)\n"
-  "    k_p75_B_off = 0.1 (1/s)   : k_p75_B_off (BDNF unbinding from p75)\n"
-  "    k_degR1 = 0.0001 (1/s)   : k_degR1 (p75 degradation)\n"
-  "    k_degR2 = 0.00001 (1/s)   : k_degR2 (TrkB degradation)\n"
-  "    k_int_p75_pro = 0.0005 (1/s)    : k_int_p75_pro (proBDNF-p75 internalization)\n"
-  "    k_int_p75_B = 0.0005 (1/s)    : k_int_p75_B (BDNF-p75 internalization)\n"
-  "    k_int_TrkB_B = 0.0005 (1/s)    : k_int_TrkB_B (BDNF-TrkB internalization)\n"
-  "    k_int_TrkB_pro = 0.0005 (1/s)    : k_int_TrkB_pro (proBDNF-TrkB internalization)\n"
-  "    aff_p75_pro = 0.9    : aff_p75_pro (affinity of proBDNF for p75)\n"
-  "    aff_p75_B = 0.1    : aff_p75_B (affinity of BDNF for p75)\n"
-  "    aff_TrkB_pro = 0.1    : aff_TrkB_pro (affinity of proBDNF for TrkB)\n"
-  "    aff_TrkB_B = 0.9    : aff_TrkB_B (affinity of BDNF for TrkB)\n"
-  "    k_deg_tPA = 0.0011 (1/s)   :k_deg_tPA (degradation rate of tPA) - slow degradation\n"
-  "    ks_tPA = 0.0001 (uM/s)    : ks_tPA (synthesis rate of tPA)\n"
-  "    : NEW PARAMETERS FOR BIOLOGICAL ACCURACY\n"
-  "    ks_p75 = 0.0001 (uM/s)    : ks_p75 (synthesis rate of p75) - small value to maintain baseline\n"
-  "    ks_TrkB = 0.00001 (uM/s)    : ks_TrkB (synthesis rate of TrkB) - small value to maintain baseline\n"
-  "    activity_level = 1.0   : activity level factor (default is 1, can be adjusted)\n"
-  "}\n"
+  "    : Parameters associated with membrane properties\n"
+  "    cm = 1 (uF/cm2)         : Membrane capacitance\n"
+  "    g_leak = 0.0001 (S/cm2) : Leak conductance\n"
+  "    e_leak = -65 (mV)       : Leak reversal potential\n"
+  "    v_threshold_spike = -20 (mV) : Threshold for spike detection (constant)\n"
   "\n"
-  "NEURON {\n"
-  "    SUFFIX ode_neuron\n"
-  "    USEION ca READ ica WRITE ica\n"
-  "    NONSPECIFIC_CURRENT i\n"
-  "    RANGE P, B, p75, TrkB, p75_pro, p75_B, TrkB_B, TrkB_pro, tPA\n"
-  "    RANGE ksP, k_cleave, k_p75_pro_on, k_p75_pro_off, k_degP, k_TrkB_pro_on, k_TrkB_pro_off\n"
-  "    RANGE k_TrkB_B_on, k_TrkB_B_off, k_degB, k_p75_B_on, k_p75_B_off, k_degR1, k_degR2\n"
-  "    RANGE k_int_p75_pro, k_int_p75_B, k_int_TrkB_B, k_int_TrkB_pro, aff_p75_pro\n"
-  "    RANGE aff_p75_B, aff_TrkB_pro, aff_TrkB_B, k_deg_tPA, ks_tPA, ks_p75, ks_TrkB\n"
-  "\n"
-  "    RANGE activity_level\n"
-  "\n"
-  "    RANGE growth_strength, apop_strength\n"
+  "    : Your existing ODE parameters (ensure these match your Python param list order)\n"
+  "    ksP = 5.0e-3 (uM/s)   : synthesis rate of proBDNF\n"
+  "    k_cleave = 0.01 (1/s)    : rate of proBDNF cleavage into BDNF\n"
+  "    k_p75_pro_on = 1.0 (MS)    : proBDNF binding to p75\n"
+  "    k_p75_pro_off = 0.9 (1/s)    : proBDNF unbinding from p75\n"
+  "    k_degP = 5.0e-4 (1/s)   : proBDNF degradation\n"
+  "    k_TrkB_pro_on = 0.2 (MS)    : proBDNF binding to TrkB\n"
+  "    k_TrkB_pro_off = 0.1 (1/s)   : proBDNF unbinding from TrkB\n"
+  "    k_TrkB_B_on = 1.0 (MS)    : BDNF binding to TrkB\n"
+  "    k_TrkB_B_off = 0.9 (1/s)    : BDNF unbinding from TrkB\n"
+  "    k_degB = 0.005 (1/s)    : BDNF degradation\n"
+  "    k_p75_B_on = 0.3 (MS)    : BDNF binding to p75\n"
+  "    k_p75_B_off = 0.1 (1/s)   : BDNF unbinding from p75\n"
+  "    k_degR1 = 0.0001 (1/s)   : p75 degradation\n"
+  "    k_degR2 = 0.00001 (1/s)   : TrkB degradation\n"
+  "    k_int_p75_pro = 0.0005 (1/s)    : proBDNF-p75 internalization\n"
+  "    k_int_p75_B = 0.0005 (1/s)    : BDNF-p75 internalization\n"
+  "    k_int_TrkB_B = 0.0005 (1/s)    : BDNF-TrkB internalization\n"
+  "    k_int_TrkB_pro = 0.0005 (1/s)    : proBDNF-TrkB internalization\n"
+  "    aff_p75_pro = 0.9    : affinity of proBDNF for p75\n"
+  "    aff_p75_B = 0.1    : affinity of BDNF for p75\n"
+  "    aff_TrkB_pro = 0.1    : affinity of proBDNF for TrkB\n"
+  "    aff_TrkB_B = 0.9    : affinity of BDNF for TrkB\n"
+  "    k_deg_tPA = 0.0011 (1/s)   : degradation rate of tPA - slow degradation\n"
+  "    ks_tPA = 0.0001 (uM/s)    : synthesis rate of tPA\n"
+  "    ks_p75 = 0.0001 (uM/s)    : synthesis rate of p75 - small value to maintain baseline\n"
+  "    ks_TrkB = 0.00001 (uM/s)    : synthesis rate of TrkB - small value to maintain baseline\n"
+  "    \n"
+  "    : Parameters for activity level dynamics\n"
+  "    tau_activity = 50 (ms) : Time constant for activity_level decay\n"
+  "    activity_gain = 0.1 (unitless) : How much one synaptic event boosts activity_level\n"
   "}\n"
   "\n"
   "ASSIGNED {\n"
-  "    ks_P_variable (uM/s)  : Adjusted synthesis rate of proBDNF based on activity level\n"
-  "    ks_tPA_variable (uM/s)  : Adjusted synthesis rate of tPA based on activity level\n"
-  "    growth_strength  : Growth strength factor\n"
-  "    apop_strength    : Apoptosis strength factor\n"
-  "    ica (mA/cm2)\n"
-  "    i (mA/cm2)\n"
+  "    v (mV) : Membrane potential (assigned by NEURON's solver, not a state of this mechanism)\n"
+  "    ica (mA/cm2) : if you use Ca ions.\n"
+  "    i (mA/cm2) : Current contributed by this mechanism (e.g., leak current)\n"
+  "    \n"
+  "    ks_P_variable (uM/s)\n"
+  "    ks_tPA_variable (uM/s)\n"
+  "    growth_strength\n"
+  "    apop_strength\n"
+  "    syn_input_activity (unitless) : \n"
+  "    : REMOVED: syn_input_activity is a POINTER from ProbabilisticSyn, not ASSIGNED here\n"
   "}\n"
   "\n"
   "STATE {\n"
@@ -837,7 +800,8 @@ static const char* nmodl_file_text =
   "    TrkB_B (uM)    : BDNF bound to TrkB\n"
   "    TrkB_pro (uM)    : proBDNF bound to TrkB\n"
   "    tPA (uM)    : tPA concentration\n"
-  "\n"
+  "    \n"
+  "    activity_level (unitless) : Activity level factor (now a state variable)\n"
   "}\n"
   "\n"
   "INITIAL {\n"
@@ -850,22 +814,31 @@ static const char* nmodl_file_text =
   "    TrkB_B = 0.0 (uM)    : Initial concentration of BDNF bound to TrkB\n"
   "    TrkB_pro = 0.0 (uM)    : Initial concentration of proBDNF bound to TrkB\n"
   "    tPA = 0.1 (uM)    : Initial concentration of tPA\n"
+  "    \n"
+  "    activity_level = 0.0 : Initial activity level\n"
+  "    syn_input_activity = 0.0 : Initialize syn_input_activity (it's a RANGE, so can be initialized here)\n"
+  "\n"
+  "    : Initialize assigned values\n"
   "    ica = 0\n"
   "    i = 0\n"
   "}\n"
   "\n"
   "BREAKPOINT {\n"
-  "    SOLVE integrate METHOD derivimplicit\n"
-  "    ks_P_variable = ksP * activity_level  : Adjusted synthesis rate of proBDNF based on activity level\n"
-  "    ks_tPA_variable = ks_tPA * activity_level  : Adjusted synthesis rate of tPA based on activity level\n"
+  "    SOLVE states METHOD cnexp\n"
+  "    \n"
+  "    : Calculate current contributed by *this* mechanism (leak current)\n"
+  "    i = g_leak * (e_leak - v) : Standard leak current for a density mechanism\n"
+  "    : NEURON's internal solver will sum this 'i' with NONSPECIFIC_CURRENT i_inj and other currents.\n"
   "\n"
-  "    growth_strength = (Hill(TrkB_B, 0.05 (uM), 2) + Hill(TrkB_pro, 0.02 (uM), 2))/2 : Growth strength based on proBDNF and BDNF concentrations\n"
-  "    apop_strength = (Hill(p75_pro, 0.02 (uM), 2) + Hill(p75_B, 0.02 (uM), 2))/2 : Apoptosis strength based on proBDNF concentration\n"
+  "    ks_P_variable = ksP * (1 + activity_level)  : Adjusted synthesis rate of proBDNF based on activity level\n"
+  "    ks_tPA_variable = ks_tPA * (1 + activity_level)  : Adjusted synthesis rate of tPA based on activity level\n"
   "\n"
-  "   \n"
+  "    growth_strength = (Hill(TrkB_B, 0.05 (uM), 2) + Hill(TrkB_pro, 0.02 (uM), 2))/2 : Growth strength based on TrkB-ligand concentrations\n"
+  "    apop_strength = (Hill(p75_pro, 0.02 (uM), 2) + Hill(p75_B, 0.02 (uM), 2))/2 : Apoptosis strength based on p75-ligand concentrations\n"
   "}\n"
   "\n"
-  "DERIVATIVE integrate {\n"
+  "DERIVATIVE states {\n"
+  "    : ODEs for biochemical concentrations and activity_level\n"
   "    P' = ks_P_variable - k_cleave * tPA * P - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degP * P\n"
   "        \n"
   "    B' = k_cleave * tPA * P - k_TrkB_B_on * aff_TrkB_B * B * TrkB + k_TrkB_B_off * TrkB_B - k_p75_B_on * aff_p75_B * B * p75 + k_p75_B_off * p75_B - k_degB * B\n"
@@ -875,25 +848,21 @@ static const char* nmodl_file_text =
   "    TrkB' = ks_TrkB - k_TrkB_B_on * aff_TrkB_B * B * TrkB + k_TrkB_B_off * TrkB_B - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degR2 * TrkB\n"
   "        \n"
   "    p75_pro' = k_p75_pro_on * aff_p75_pro * P * p75 - k_p75_pro_off * p75_pro - k_int_p75_pro * p75_pro\n"
-  "        \n"
+  "      \n"
   "    p75_B' = k_p75_B_on * aff_p75_B * B * p75 - k_p75_B_off * p75_B - k_int_p75_B * p75_B\n"
   "        \n"
   "    TrkB_B' = k_TrkB_B_on * aff_TrkB_B * B * TrkB - k_TrkB_B_off * TrkB_B - k_int_TrkB_B * TrkB_B\n"
   "        \n"
   "    TrkB_pro' = k_TrkB_pro_on * aff_TrkB_pro * P * TrkB - k_TrkB_pro_off * TrkB_pro - k_int_TrkB_pro * TrkB_pro\n"
   "        \n"
-  "    tPA' = ks_tPA_variable - k_deg_tPA * tPA \n"
+  "    tPA' = ks_tPA_variable - k_deg_tPA * tPA\n"
+  "\n"
+  "    activity_level' = -activity_level / tau_activity + syn_input_activity : `syn_input_activity` is a 'kick' rate\n"
+  "    \n"
   "}\n"
-  "\n"
-  "\n"
   "\n"
   "FUNCTION Hill(C (uM), KD (uM), n) {\n"
-  "    : C: Concentration (uM)\n"
-  "    : KD: Half-maximal concentration (uM)\n"
-  "    : n: Hill coefficient (dimensionless)\n"
-  "    \n"
   "    Hill = C^n / (KD^n + C^n)\n"
   "}\n"
-  "\n"
   ;
 #endif
