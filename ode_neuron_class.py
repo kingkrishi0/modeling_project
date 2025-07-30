@@ -5,10 +5,7 @@ from neuronpp.cells.cell import Cell
 import numpy as np
 import os
 
-from neuron import h, nrn
-from neuronpp.cells.cell import Cell
-import numpy as np
-import os
+
 
 class ODENeuron(Cell):
     def __init__(self, name, initial_concentrations: list, params: list):
@@ -22,22 +19,23 @@ class ODENeuron(Cell):
 
         self.ode_mech = self.soma_segment.get_mechanism(name='ode_neuron')
 
-        # Map NMODL STATE and ASSIGNED variables to Python PtrVecs for recording
-        self.P = h.PtrVec(1)
-        self.B = h.PtrVec(1)
-        self.p75 = h.PtrVec(1)
-        self.TrkB = h.PtrVec(1)
-        self.p75_pro = h.PtrVec(1)
-        self.p75_B = h.PtrVec(1)
-        self.TrkB_B = h.PtrVec(1)
-        self.TrkB_pro = h.PtrVec(1)
-        self.tPA = h.PtrVec(1)
-        self.activity_level_ref = h.PtrVec(1) # This is a STATE variable
-        self.v_ref = h.PtrVec(1) # For membrane potential
-        self.growth_strength_ref = h.PtrVec(1)
-        self.apop_strength_ref = h.PtrVec(1)
-        self.syn_input_activity_ref = h.PtrVec(1) # NEW: For reading syn_input_activity
+        # Use h.Vector for recording, not h.PtrVector
+        self.P = h.Vector()
+        self.B = h.Vector()
+        self.p75 = h.Vector()
+        self.TrkB = h.Vector()
+        self.p75_pro = h.Vector()
+        self.p75_B = h.Vector()
+        self.TrkB_B = h.Vector()
+        self.TrkB_pro = h.Vector()
+        self.tPA = h.Vector()
+        self.activity_level_ref = h.Vector() # This is a STATE variable
+        self.v_ref = h.Vector() # For membrane potential
+        self.growth_strength_ref = h.Vector()
+        self.apop_strength_ref = h.Vector()
+        self.syn_input_activity_ref = h.Vector() # NEW: For reading syn_input_activity
 
+        # Record the NMODL mechanism variables
         self.P.record(self.ode_mech._ref_P)
         self.B.record(self.ode_mech._ref_B)
         self.p75.record(self.ode_mech._ref_p75)
@@ -66,14 +64,13 @@ class ODENeuron(Cell):
         self.ode_mech.activity_level = 0.0 # Explicitly initialize
         self.ode_mech.syn_input_activity = 0.0 # NEW: Explicitly initialize
 
-
         # Set NMODL PARAMETER variables using the params list
         param_names = [
             "ksP", "k_cleave", "k_p75_pro_on", "k_p75_pro_off", "k_degP", "k_TrkB_pro_on", "k_TrkB_pro_off",
             "k_TrkB_B_on", "k_TrkB_B_off", "k_degB", "k_p75_B_on", "k_p75_B_off", "k_degR1", "k_degR2",
             "k_int_p75_pro", "k_int_p75_B", "k_int_TrkB_B", "k_int_TrkB_pro", "aff_p75_pro",
             "aff_p75_B", "aff_TrkB_pro", "aff_TrkB_B", "k_deg_tPA", "ks_tPA", "ks_p75", "ks_TrkB",
-            "tau_activity", "activity_gain", "cm", "g_leak", "e_leak", "v_threshold_spike"
+            "tau_activity", "activity_gain", "g_leak", "e_leak", "v_threshold_spike"
         ]
 
         for i, param_name in enumerate(param_names):
@@ -82,10 +79,15 @@ class ODENeuron(Cell):
             else:
                 print(f"Warning: Parameter '{param_name}' not found in provided params list for {self.name}. Using NMODL default.")
 
-        # Spike detector: fires when Vm crosses threshold
+        # Spike detector: for recording spikes (optional)
+        # This is just for spike recording, not for network connections
         self.spike_detector = h.NetCon(self.soma_segment.hoc._ref_v, None, sec=self.soma.hoc)
         self.spike_detector.threshold = self.ode_mech.v_threshold_spike
         self.spike_detector.delay = 0.0 # Detect instantaneously
+        
+        # Vector to record spike times
+        self.spike_times = h.Vector()
+        self.spike_detector.record(self.spike_times)
 
         self.neuron_state = 0.0
         self.stim = None # For IClamp
@@ -93,10 +95,16 @@ class ODENeuron(Cell):
         print(f"ODENeuron '{self.name}' initialized.")
 
     def add_external_current_stim(self, delay: float, dur: float, amp: float):
-        self.stim = h.IClamp(self.soma(0.5))
+        self.stim = h.IClamp(self.soma_segment.hoc)
         self.stim.delay = delay
         self.stim.dur = dur
         self.stim.amp = amp
+
+    def update_activity_level(self, activity_value: float):
+        """Method to update the activity level - you'll need to implement this"""
+        # This method wasn't in your original code but is called in the main loop
+        # You might need to implement this based on your NMODL mechanism
+        self.ode_mech.syn_input_activity = activity_value
 
     def calculate_and_get_neuron_state(self) -> float:
         growth_strength = self.ode_mech.growth_strength
@@ -127,7 +135,7 @@ class ODENeuron(Cell):
             "k_TrkB_B_on", "k_TrkB_B_off", "k_degB", "k_p75_B_on", "k_p75_B_off", "k_degR1", "k_degR2",
             "k_int_p75_pro", "k_int_p75_B", "k_int_TrkB_B", "k_int_TrkB_pro", "aff_p75_pro",
             "aff_p75_B", "aff_TrkB_pro", "aff_TrkB_B", "k_deg_tPA", "ks_tPA", "ks_p75", "ks_TrkB",
-            "tau_activity", "activity_gain", "cm", "g_leak", "e_leak", "v_threshold_spike"
+            "tau_activity", "activity_gain", "g_leak", "e_leak", "v_threshold_spike"
         ]
         
         param_dict = {}
@@ -156,7 +164,7 @@ if __name__ == "__main__":
         os.system("nrnivmodl") # Compile mods in current directory
 
     # Import the compiled mechanism after compilation
-    h.nrn_load_dll(os.path.join("x86_64", ".libs", "libnrnmech.so")) # Adjust for your OS (e.g., .dll for Windows)
+    h.nrn_load_dll(os.path.join("arm64", ".libs", "libnrnmech.dylib")) # Adjust for your OS (e.g., .dll for Windows)
 
     # Initial concentrations (y0) from your original ODE code
     initial_concentrations = [
@@ -201,7 +209,14 @@ if __name__ == "__main__":
         0.0001,    # ks_p75
         0.00001    # ks_TrkB
     ]
-
+    from neuron import h
+# Print the names of all density mechanisms
+    mt = h.MechanismType(0)
+    mname  = h.ref('')
+    for i in range(mt.count()):
+        mt.select(i)
+        mt.selected(mname)
+        print(mname[0])
     # Initialize a CustomNeuron
     neuron1 = ODENeuron(name="neuron1",
                            initial_concentrations=initial_concentrations,

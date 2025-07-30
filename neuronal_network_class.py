@@ -86,14 +86,16 @@ class NeuronalNetwork:
         )
         
         # Primary NetCon: from presynaptic neuron's spike detector to the postsynaptic ProbabilisticSyn
-        netcon_to_synapse = h.NetCon(pre_neuron.spike_detector, point_process_mech.hoc, sec=pre_neuron.soma.hoc)
+        netcon_to_synapse = h.NetCon(pre_neuron.soma_segment.hoc._ref_v, point_process_mech.hoc, 
+                           sec=pre_neuron.soma.hoc)
         netcon_to_synapse.weight[0] = self.initial_syn_weight
         netcon_to_synapse.delay = 1.0 # Standard synaptic delay
+        netcon_to_synapse.threshold = pre_neuron.ode_mech.v_threshold_spike
 
         # LINK THE POINTER: This is crucial for ProbabilisticSyn to write to ODENeuron's syn_input_activity
         # The POINTER declaration in ProbabilisticSyn (target_syn_input_activity)
         # needs to point to the address of the syn_input_activity variable in the ODENeuron mechanism.
-        point_process_mech.hoc.target_syn_input_activity = post_neuron.ode_mech._ref_syn_input_activity
+        h.setpointer(post_neuron.ode_mech._ref_syn_input_activity, 'target_syn_input_activity', point_process_mech.hoc)
         
         syn_obj = SingleSynapse(
             source=pre_neuron.spike_detector, # Source for neuronpp wrapper, though netcon handles actual connection
