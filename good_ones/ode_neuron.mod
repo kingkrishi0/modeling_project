@@ -2,7 +2,7 @@ NEURON {
     SUFFIX ode_neuron
     RANGE g_leak, e_leak
     RANGE P, B, p75, TrkB, p75_pro, p75_B, TrkB_B, TrkB_pro, tPA
-    RANGE ksP, k_cleave, k_p75_pro_on, k_p75_pro_off, k_degP, k_TrkB_pro_on, k_TrkB_pro_off
+    RANGE ksP, k_cleave, k_cleave_variable, k_p75_pro_on, k_p75_pro_off, k_degP, k_TrkB_pro_on, k_TrkB_pro_off
     RANGE k_TrkB_B_on, k_TrkB_B_off, k_degB, k_p75_B_on, k_p75_B_off, k_degR1, k_degR2
     RANGE k_int_p75_pro, k_int_p75_B, k_int_TrkB_B, k_int_TrkB_pro, aff_p75_pro
     RANGE aff_p75_B, aff_TrkB_pro, aff_TrkB_B, k_deg_tPA, ks_tPA, ks_p75, ks_TrkB
@@ -73,6 +73,7 @@ ASSIGNED {
     growth_strength 
     apop_strength 
     syn_input_activity : Input from synapses
+    k_cleave_variable (1/s) : Cleavage rate of proBDNF into BDNF
 }
 
 STATE {
@@ -106,9 +107,9 @@ BREAKPOINT {
     SOLVE states METHOD cnexp
     
     : Calculate current contributed by this mechanism (leak current)
-    
+    k_cleave_variable = k_cleave * (1 + activity_level * 4)
     ks_P_variable = ksP * (1 + activity_level)
-    ks_tPA_variable = ks_tPA * (1 + activity_level)
+    ks_tPA_variable = ks_tPA * (1 + activity_level*4)
 
     growth_strength = (Hill(TrkB_B, 0.05, 2) + Hill(TrkB_pro, 0.02, 2))/2
     apop_strength = (Hill(p75_pro, 0.02, 2) + Hill(p75_B, 0.02, 2))/2
@@ -116,9 +117,9 @@ BREAKPOINT {
 }
 
 DERIVATIVE states {
-    P' = ks_P_variable - k_cleave * tPA * P - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degP * P
+    P' = ks_P_variable - k_cleave_variable * tPA * P - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_TrkB_pro_on * aff_TrkB_pro * P * TrkB + k_TrkB_pro_off * TrkB_pro - k_degP * P
         
-    B' = k_cleave * tPA * P - k_TrkB_B_on * aff_TrkB_B * B * TrkB + k_TrkB_B_off * TrkB_B - k_p75_B_on * aff_p75_B * B * p75 + k_p75_B_off * p75_B - k_degB * B
+    B' = k_cleave_variable * tPA * P - k_TrkB_B_on * aff_TrkB_B * B * TrkB + k_TrkB_B_off * TrkB_B - k_p75_B_on * aff_p75_B * B * p75 + k_p75_B_off * p75_B - k_degB * B
     
     p75' = ks_p75 * (1 + activity_level * 0.001) - k_p75_pro_on * aff_p75_pro * P * p75 + k_p75_pro_off * p75_pro - k_p75_B_on * aff_p75_B * B * p75 + k_p75_B_off * p75_B - k_degR1 * p75
         

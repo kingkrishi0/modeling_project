@@ -345,9 +345,9 @@ class MinimalBiologicalNetwork:
             # High growth_strength = high BDNF = strengthen synapses
             # High apop_strength = high proBDNF = weaken synapses
             
-            if pre_signal > 0.1 and post_signal > 0.1:
+            if pre_signal > -0.1 and post_signal > -0.1:
                 # Both neurons have high BDNF - strengthen synapse (LTP-like)
-                weight_change = self.learning_rate * min(pre_growth, post_growth)
+                weight_change = self.learning_rate * max(pre_growth, post_growth)
             elif pre_signal < -0.35 and post_signal < -0.35:
                 # High proBDNF/p75 signaling - weaken synapse (LTD-like)
                 weight_change = -self.learning_rate * max(pre_apop, post_apop)
@@ -557,7 +557,7 @@ if __name__ == "__main__":
         -65.0, #e_leak
         -20.0, #v_threshold_spike
         5.0e-3, # ksP
-        0.003, # k_cleave
+        0.001, # k_cleave
         1.0, # k_p75_pro_on
         0.9, # k_p75_pro_off
         5.0e-4, # k_degP
@@ -565,7 +565,7 @@ if __name__ == "__main__":
         0.1, # k_TrkB_pro_off
         1.0, # k_TrkB_B_on
         0.9, #` k_TrkB_B_off
-        0.015, # k_degB
+        0.15, # k_degB
         0.3, # k_p75_B_on
         0.1, # k_p75_B_off
         0.0001, # k_degR1

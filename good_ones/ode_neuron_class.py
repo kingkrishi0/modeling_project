@@ -186,32 +186,37 @@ if __name__ == "__main__":
     # Parameters (params) from your original ODE code
     # Ensure this order matches the NMODL PARAMETER block
     parameters = [
-        5.0e-3,   # ksP
-        0.01,    # k_cleave
-        1.0,    # k_p75_pro_on
-        0.9,    # k_p75_pro_off
-        5.0e-4,   # k_degP
-        0.2,    # k_TrkB_pro_on
-        0.1,   # k_TrkB_pro_off
-        1.0,    # k_TrkB_B_on
-        0.9,    # k_TrkB_B_off
-        0.15,    # k_degB
-        0.3,    # k_p75_B_on
-        0.2,   # k_p75_B_off
-        0.0001,   # k_degR1
-        0.00001,   # k_degR2
-        0.0005,    # k_int_p75_pro
-        0.0005,    # k_int_p75_B
-        0.0005,    # k_int_TrkB_B
-        0.0005,    # k_int_TrkB_pro
-        0.9,    # aff_p75_pro
-        0.1,    # aff_p75_B
-        0.1,    # aff_TrkB_pro
-        0.9,    # aff_TrkB_B
-        0.011,   # k_deg_tPA
-        0.0001,    # ks_tPA
-        0.0001,    # ks_p75
-        0.00001    # ks_TrkB
+        0.0001, 
+        -65, 
+        -20,
+        5.0e-3,    
+        #0.01, #/s)    
+        1.0, #MS)   
+        0.9, #/s)   
+        5.0e-4, #/s)   : proBDNF degradation
+        0.2, #MS)    : proBDNF binding to TrkB
+        0.1, #/s)   : proBDNF unbinding from TrkB
+        1.0, #MS)    : BDNF binding to TrkB
+        0.9, #/s)    : BDNF unbinding from TrkB
+        0.005, #/s)    : BDNF degradation
+        0.3, #MS)    : BDNF binding to p75
+        0.1, #/s)   : BDNF unbinding from p75
+        0.0001, #/s)   : p75 degradation
+        0.00001, #/s)   : TrkB degradation
+        0.0005, #/s)    : proBDNF-p75 internalization
+        0.0005, #/s)    : BDNF-p75 internalization
+        0.0005, #/s)    : BDNF-TrkB internalization
+        0.0005, #/s)    : proBDNF-TrkB internalization
+        0.9, #    : affinity of proBDNF for p75
+        0.1,#    : affinity of BDNF for p75
+        0.1,#    : affinity of proBDNF for TrkB
+        0.9,#    : affinity of BDNF for TrkB
+        0.0015, #/s)   : degradation rate of tPA - slow degradation
+        0.0001, #uM/s)    : synthesis rate of tPA
+        0.0001, #uM/s)    : synthesis rate of p75 - small value to maintain baseline
+        0.00001, #uM/s)    : synthesis rate of TrkB - small value to maintain baseline
+        50, #ms) : Time constant for activity_level decay
+        0.1   # ks_TrkB
     ]
     from neuron import h
 # Print the names of all density mechanisms
