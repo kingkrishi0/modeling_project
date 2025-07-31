@@ -18,10 +18,10 @@ class MinimalBiologicalNetwork:
     def __init__(self, rows: int, cols: int, initial_neuron_concentrations: list, base_neuron_params: list,
                  synapse_type: str = "ProbabilisticSyn",
                  initial_syn_weight: float = 0.5,
-                 learning_rate: float = 0.007,
+                 learning_rate: float = 0.001,
                  min_weight: float = 0.01,
                  max_weight: float = 1.0,
-                 prune_threshold: float = 0.001):
+                 prune_threshold: float = 0.35):
         
         if rows <= 0 or cols <= 0:
             raise ValueError("rows and cols must be above 0")
@@ -123,11 +123,11 @@ class MinimalBiologicalNetwork:
         # Other layers are less sensitive
         
         layer_sensitivity = {
-            "Layer1": 0.8,    # Horizontal cells - moderate sensitivity
-            "Layer2/3": 1.2,  # Small pyramids - high sensitivity
-            "Layer4": 1.5,    # Input layer - highest sensitivity
+            "Layer1": 0.9,    # Horizontal cells - moderate sensitivity
+            "Layer2/3": 1.1,  # Small pyramids - high sensitivity
+            "Layer4": 1.3,    # Input layer - highest sensitivity
             "Layer5": 1.0,    # Large pyramids - moderate sensitivity
-            "Layer6": 0.9     # Feedback layer - lower sensitivity
+            "Layer6": 0.94     # Feedback layer - lower sensitivity
         }
         
         base_sensitivity = layer_sensitivity[layer_info["name"]]
@@ -348,7 +348,7 @@ class MinimalBiologicalNetwork:
             if pre_signal > 0.1 and post_signal > 0.1:
                 # Both neurons have high BDNF - strengthen synapse (LTP-like)
                 weight_change = self.learning_rate * min(pre_growth, post_growth)
-            elif pre_signal < -0.1 and post_signal < -0.1:
+            elif pre_signal < -0.35 and post_signal < -0.35:
                 # High proBDNF/p75 signaling - weaken synapse (LTD-like)
                 weight_change = -self.learning_rate * max(pre_apop, post_apop)
             else:
@@ -557,7 +557,7 @@ if __name__ == "__main__":
         -65.0, #e_leak
         -20.0, #v_threshold_spike
         5.0e-3, # ksP
-        0.0002, # k_cleave
+        0.003, # k_cleave
         1.0, # k_p75_pro_on
         0.9, # k_p75_pro_off
         5.0e-4, # k_degP
@@ -565,7 +565,7 @@ if __name__ == "__main__":
         0.1, # k_TrkB_pro_off
         1.0, # k_TrkB_B_on
         0.9, #` k_TrkB_B_off
-        0.005, # k_degB
+        0.015, # k_degB
         0.3, # k_p75_B_on
         0.1, # k_p75_B_off
         0.0001, # k_degR1
@@ -595,10 +595,10 @@ if __name__ == "__main__":
         base_neuron_params=base_neuron_parameters,
         synapse_type="ProbabilisticSyn",
         initial_syn_weight=0.5,
-        learning_rate=0.01,
+        learning_rate=0.005,
         min_weight=0.01,
         max_weight=1.0,
-        prune_threshold=0.0009
+        prune_threshold=0.1
     )
     
     # Comprehensive simulation with your existing framework
