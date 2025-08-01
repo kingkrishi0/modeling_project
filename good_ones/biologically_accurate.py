@@ -1,8 +1,3 @@
-"""
-Minimal Biologically Accurate Neural Network
-Uses only BDNF/proBDNF system with activity-dependent synthesis
-Vulnerability emerges from intrinsic metabolic differences and activity patterns
-"""
 
 from neuron import h, nrn
 from neuronpp.cells.cell import Cell
@@ -42,32 +37,21 @@ class MinimalBiologicalNetwork:
         self.max_weight = max_weight
         self.prune_threshold = prune_threshold
         self.simulation_time = simulation_time
-
-        print(f"Building minimal biological neural network ({rows}x{cols})")
-
-        # Create neurons with biologically realistic differences
         self._create_biologically_differentiated_neurons(initial_neuron_concentrations, base_neuron_params)
         self._build_grid_connections()
         self._initialize_activity_patterns(self.simulation_time)
         
-        print(f"Network created with {len(self.connections)} connections!")
-
-    def _create_biologically_differentiated_neurons(self, initial_concentrations, base_params):
-        """Create neurons with intrinsic biological differences that determine vulnerability"""
-        
+    def _create_biologically_differentiated_neurons(self, initial_concentrations, base_params):        
         for r in range(self.rows):
             newrow = []
             for c in range(self.cols):
-                # 1. Determine cortical layer (main biological organizer)
                 layer_info = self._get_cortical_layer_properties(r)
                 
-                # 2. Calculate cell size (determines baseline synthesis rates)
+               
                 cell_size = self._calculate_cell_size(layer_info, r, c)
                 
-                # 3. Calculate activity sensitivity (how responsive to input)
                 activity_sensitivity = self._calculate_activity_sensitivity(layer_info, cell_size)
                 
-                # 4. Modify BDNF parameters based on intrinsic properties
                 neuron_params = self._adjust_bdnf_parameters_for_biology(
                     base_params, layer_info, cell_size, activity_sensitivity
                 )
@@ -87,8 +71,6 @@ class MinimalBiologicalNetwork:
             self.neurons.append(newrow)
 
     def _get_cortical_layer_properties(self, r):
-        """Get biologically accurate cortical layer properties"""
-        # Based on real cortical anatomy - each layer has different cell types
         layer_map = {
             0: {"name": "Layer1", "cell_density": 0.2, "primary_type": "horizontal"},
             1: {"name": "Layer2/3", "cell_density": 1.2, "primary_type": "pyramidal_small"},
@@ -101,8 +83,6 @@ class MinimalBiologicalNetwork:
         return layer_map[layer_index]
 
     def _calculate_cell_size(self, layer_info, r, c):
-        """Calculate cell size based on layer and position"""
-        # Base size from layer type
         base_sizes = {
             "horizontal": 0.3,      # Small horizontal cells
             "pyramidal_small": 0.7, # Small pyramidal neurons  
@@ -113,16 +93,11 @@ class MinimalBiologicalNetwork:
         
         base_size = base_sizes[layer_info["primary_type"]]
         
-        # Add some realistic variation within layer
         position_variation = 1.0 + 0.3 * np.sin(c * np.pi / self.cols)
         
         return base_size * position_variation
 
     def _calculate_activity_sensitivity(self, layer_info, cell_size):
-        """Calculate how sensitive neuron is to synaptic input"""
-        # Layer 4 (input layer) is most sensitive to activity
-        # Layer 5 (output layer) is moderately sensitive
-        # Other layers are less sensitive
         
         layer_sensitivity = {
             "Layer1": 0.9,    # Horizontal cells - moderate sensitivity
@@ -134,7 +109,6 @@ class MinimalBiologicalNetwork:
         
         base_sensitivity = layer_sensitivity[layer_info["name"]]
         
-        # Larger cells are typically less sensitive (more stable)
         size_factor = 1.0 / (1.0 + cell_size * 0.2)
         
         return base_sensitivity * size_factor
@@ -591,7 +565,7 @@ if __name__ == "__main__":
         0.1, # k_TrkB_pro_off
         1.0, # k_TrkB_B_on
         0.9, #` k_TrkB_B_off
-        0.15, # k_degB
+        0.145, # k_degB
         0.3, # k_p75_B_on
         0.1, # k_p75_B_off
         0.0001, # k_degR1
@@ -612,13 +586,11 @@ if __name__ == "__main__":
         0.001 # activity_gain
     ]
     
-    # Create network
-    print("\n🧬 Creating BDNF-Driven Network...")
-    simulation_time = 10000.0
+    simulation_time = 30000.0
     visualization_interval = 1000.0
     plasticity_interval = 10.0
     network = MinimalBiologicalNetwork(
-        rows=10, 
+        rows=4, 
         cols=10, 
         initial_neuron_concentrations=initial_neuron_concentrations,
         base_neuron_params=base_neuron_parameters,
