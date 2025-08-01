@@ -586,7 +586,7 @@ if __name__ == "__main__":
         0.001 # activity_gain
     ]
     
-    simulation_time = 30000.0
+    simulation_time = 40000.0
     visualization_interval = 1000.0
     plasticity_interval = 10.0
     network = MinimalBiologicalNetwork(
