@@ -21,7 +21,8 @@ class MinimalBiologicalNetwork:
                  learning_rate: float = 0.001,
                  min_weight: float = 0.01,
                  max_weight: float = 1.0,
-                 prune_threshold: float = 0.35):
+                 prune_threshold: float = 0.35,
+                 simulation_time: float = 20000.0):
         
         if rows <= 0 or cols <= 0:
             raise ValueError("rows and cols must be above 0")
@@ -40,13 +41,14 @@ class MinimalBiologicalNetwork:
         self.min_weight = min_weight
         self.max_weight = max_weight
         self.prune_threshold = prune_threshold
+        self.simulation_time = simulation_time
 
         print(f"Building minimal biological neural network ({rows}x{cols})")
 
         # Create neurons with biologically realistic differences
         self._create_biologically_differentiated_neurons(initial_neuron_concentrations, base_neuron_params)
         self._build_grid_connections()
-        self._initialize_activity_patterns()
+        self._initialize_activity_patterns(self.simulation_time)
         
         print(f"Network created with {len(self.connections)} connections!")
 
@@ -184,38 +186,58 @@ class MinimalBiologicalNetwork:
         
         return params
 
-    def _initialize_activity_patterns(self):
-        """Initialize different activity patterns across the network"""
-        # Store stimulation info for repeated activation
-        self.stim_objects = []
+    def _initialize_activity_patterns(self, simulation_time):
+        """Initialize realistic activity patterns - periodic bursts with eventual quiet periods"""
+        # Realistic activity parameters
+        burst_duration = 50  # Short bursts (50ms)
+        quiet_period_min = 200  # Minimum quiet time between bursts
+        quiet_period_max = 800  # Maximum quiet time between bursts
+        activity_stops_at = simulation_time * 0.8  # Activity stops at 70% of simulation time
         
-        # Stimulate Layer 4 neurons (input layer) - REPEATEDLY
+        # Layer 4 gets most activity (sensory input)
         for c in range(self.cols):
-            if self.rows > 2:  # Make sure Layer 4 exists
-                layer4_neuron = self.neurons[2][c]  # Layer 4 = row 2
-                stim_strength = 0.5 + 0.3 * np.sin(c * np.pi / self.cols)
+            if self.rows > 2:
+                layer4_neuron = self.neurons[2][c]
+                stim_strength = 0.3 + 0.2 * np.sin(c * np.pi / self.cols)  # Reduced strength
                 
-                # Create multiple stimulations every 5000ms
-                for stim_cycle in range(0, 20):  # 20 cycles = 100,000ms coverage
-                    delay = 10 + c * 5 + stim_cycle * 5000  # Every 5000ms
+                current_time = 20 + c * 10  # Staggered start
+                
+                while current_time < activity_stops_at:
+                    # Add burst
                     layer4_neuron.add_external_current_stim(
-                        delay=delay, dur=100, amp=stim_strength
+                        delay=current_time, 
+                        dur=burst_duration, 
+                        amp=stim_strength
                     )
+                    
+                    # Random quiet period before next burst
+                    quiet_time = np.random.randint(quiet_period_min, quiet_period_max)
+                    current_time += burst_duration + quiet_time
         
-        # Add periodic background stimulation to other layers
+        # Other layers get sporadic background activity
         for r in range(self.rows):
             for c in range(self.cols):
                 if r != 2:  # Not Layer 4
                     neuron = self.neurons[r][c]
-                    stim_strength = 0.1 + 0.1 * np.random.random()
+                    stim_strength = 0.05 + 0.05 * np.random.random()  # Much weaker
                     
-                    # Multiple background stimulations
-                    for stim_cycle in range(0, 20):
-                        delay = 50 + np.random.randint(0, 400) + stim_cycle * 5000
-                        neuron.add_external_current_stim(
-                            delay=delay, dur=200, amp=stim_strength
-                        )
-    
+                    current_time = 100 + np.random.randint(0, 500)
+                    
+                    while current_time < activity_stops_at:
+                        # Sparse, random stimulation
+                        if np.random.random() < 0.3:  # Only 30% chance of stimulation
+                            neuron.add_external_current_stim(
+                                delay=current_time,
+                                dur=30,  # Very short
+                                amp=stim_strength
+                            )
+                        
+                        # Long random intervals
+                        current_time += np.random.randint(800, 2000)
+        
+        print(f"📡 Activity patterns: bursts stop at {activity_stops_at:.0f}ms")
+        print(f"🔇 Final {(1.0-0.7)*100:.0f}% of simulation will be quiet (testing BDNF decay)")
+        
     def _get_neuron_at_grid_pos(self, r: int, c: int):
         if 0 <= r < self.rows and 0 <= c < self.cols:
             return self.neurons[r][c]
@@ -592,6 +614,8 @@ if __name__ == "__main__":
     
     # Create network
     print("\n🧬 Creating BDNF-Driven Network...")
+    simulation_time = 20000.0
+    plasticity_interval = 10.0
     network = MinimalBiologicalNetwork(
         rows=4, 
         cols=10, 
@@ -602,7 +626,8 @@ if __name__ == "__main__":
         learning_rate=0.005,
         min_weight=0.01,
         max_weight=1.0,
-        prune_threshold=0.05
+        prune_threshold=0.05,
+        simulation_time=simulation_time
     )
     
     # Comprehensive simulation with your existing framework
@@ -613,9 +638,7 @@ if __name__ == "__main__":
     
     # Simulation
     h.dt = 0.1
-    simulation_time = 100000.0
-    plasticity_interval = 10.0
-    visualization_interval = 10000.0
+    visualization_interval = 100.0
     
     print(f"\n🔬 Starting BDNF-Driven Simulation...")
     print("=" * 60)
