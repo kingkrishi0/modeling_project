@@ -107,11 +107,11 @@ BREAKPOINT {
     SOLVE states METHOD cnexp
     
     : Calculate current contributed by this mechanism (leak current)
-    k_cleave_variable = k_cleave * (1.5 + activity_level * 7)
+    k_cleave_variable = k_cleave * (1 + activity_level * 7)
     ks_P_variable = ksP * (0.8 + activity_level*0.5)
     ks_tPA_variable = ks_tPA * (1 + activity_level*7)
 
-    growth_strength = (Hill(TrkB_B, 0.001, 1) + Hill(TrkB_pro, 0.0005, 1))/2
+    growth_strength = (Hill(TrkB_B, 0.002, 1) + Hill(TrkB_pro, 0.0005, 1))/2
     apop_strength = (Hill(p75_pro, 0.02, 2) + Hill(p75_B, 0.02, 2))/2
 
 }

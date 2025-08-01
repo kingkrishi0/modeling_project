@@ -138,7 +138,7 @@ class MinimalBiologicalNetwork:
             # Lower baseline synthesis but more efficient
             params[ksP_idx] *= (0.7 + cell_size * 0.3)  # Lower synthesis
             params[ks_tPA_idx] *= (1.0 + 0.2)  # More efficient processing
-            params[k_degB_idx] *= (0.8)  # Slower degradation (efficient)
+            params[k_degB_idx] *= (0.9)  # Slower degradation (efficient)
         
         # 2. LAYER-SPECIFIC BIOLOGY
         if layer_info["name"] == "Layer4":
@@ -345,10 +345,10 @@ class MinimalBiologicalNetwork:
             # High growth_strength = high BDNF = strengthen synapses
             # High apop_strength = high proBDNF = weaken synapses
             
-            if pre_signal > -0.1 and post_signal > -0.1:
+            if pre_signal > -0.14 and post_signal > -0.14:
                 # Both neurons have high BDNF - strengthen synapse (LTP-like)
                 weight_change = self.learning_rate * max(pre_growth, post_growth)
-            elif pre_signal < -0.26 and post_signal < -0.26:
+            elif pre_signal < -0.25 and post_signal < -0.25:
                 # High proBDNF/p75 signaling - weaken synapse (LTD-like)
                 weight_change = -self.learning_rate * max(pre_apop, post_apop)
             else:
@@ -565,7 +565,7 @@ if __name__ == "__main__":
         0.1, # k_TrkB_pro_off
         1.0, # k_TrkB_B_on
         0.9, #` k_TrkB_B_off
-        0.145, # k_degB
+        0.0145, # k_degB
         0.3, # k_p75_B_on
         0.1, # k_p75_B_off
         0.0001, # k_degR1
