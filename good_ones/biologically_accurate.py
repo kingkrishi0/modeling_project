@@ -211,7 +211,7 @@ class MinimalBiologicalNetwork:
                     neuron.add_external_current_stim(
                         delay=delay, dur=200, amp=stim_strength
                     )
-
+    
     def _get_neuron_at_grid_pos(self, r: int, c: int):
         if 0 <= r < self.rows and 0 <= c < self.cols:
             return self.neurons[r][c]
@@ -348,7 +348,7 @@ class MinimalBiologicalNetwork:
             if pre_signal > -0.1 and post_signal > -0.1:
                 # Both neurons have high BDNF - strengthen synapse (LTP-like)
                 weight_change = self.learning_rate * max(pre_growth, post_growth)
-            elif pre_signal < -0.35 and post_signal < -0.35:
+            elif pre_signal < -0.25 and post_signal < -0.25:
                 # High proBDNF/p75 signaling - weaken synapse (LTD-like)
                 weight_change = -self.learning_rate * max(pre_apop, post_apop)
             else:
@@ -557,7 +557,7 @@ if __name__ == "__main__":
         -65.0, #e_leak
         -20.0, #v_threshold_spike
         5.0e-3, # ksP
-        0.001, # k_cleave
+        0.0015, # k_cleave
         1.0, # k_p75_pro_on
         0.9, # k_p75_pro_off
         5.0e-4, # k_degP
@@ -609,9 +609,9 @@ if __name__ == "__main__":
     
     # Simulation
     h.dt = 0.1
-    simulation_time = 4000.0
+    simulation_time = 100000.0
     plasticity_interval = 10.0
-    visualization_interval = 400.0
+    visualization_interval = 10000.0
     
     print(f"\n🔬 Starting BDNF-Driven Simulation...")
     print("=" * 60)

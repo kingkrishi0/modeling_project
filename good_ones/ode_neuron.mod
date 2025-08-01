@@ -107,7 +107,7 @@ BREAKPOINT {
     SOLVE states METHOD cnexp
     
     : Calculate current contributed by this mechanism (leak current)
-    k_cleave_variable = k_cleave * (1 + activity_level * 4)
+    k_cleave_variable = k_cleave * (1 + activity_level * 3)
     ks_P_variable = ksP * (1 + activity_level)
     ks_tPA_variable = ks_tPA * (1 + activity_level*4)
 
