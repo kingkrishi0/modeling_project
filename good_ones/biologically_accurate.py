@@ -585,7 +585,7 @@ if __name__ == "__main__":
         0.0013, # k_deg_tPA
         0.001, # ks_tPA
         0.001, # ks_p75
-        0.00001, # ks_TrkB
+        0.0001, # ks_TrkB
         50.0, # tau_activity
         0.001 # activity_gain
     ]
@@ -613,9 +613,9 @@ if __name__ == "__main__":
     
     # Simulation
     h.dt = 0.1
-    simulation_time = 20000.0
+    simulation_time = 100000.0
     plasticity_interval = 10.0
-    visualization_interval = 2000.0
+    visualization_interval = 10000.0
     
     print(f"\n🔬 Starting BDNF-Driven Simulation...")
     print("=" * 60)
