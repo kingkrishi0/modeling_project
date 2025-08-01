@@ -374,7 +374,7 @@ class MinimalBiologicalNetwork:
             if pre_signal > -0.1 and post_signal > -0.1:
                 # Both neurons have high BDNF - strengthen synapse (LTP-like)
                 weight_change = self.learning_rate * max(pre_growth, post_growth)
-            elif pre_signal < -0.25 and post_signal < -0.25:
+            elif pre_signal < -0.26 and post_signal < -0.26:
                 # High proBDNF/p75 signaling - weaken synapse (LTD-like)
                 weight_change = -self.learning_rate * max(pre_apop, post_apop)
             else:
@@ -614,10 +614,11 @@ if __name__ == "__main__":
     
     # Create network
     print("\n🧬 Creating BDNF-Driven Network...")
-    simulation_time = 20000.0
+    simulation_time = 10000.0
+    visualization_interval = 1000.0
     plasticity_interval = 10.0
     network = MinimalBiologicalNetwork(
-        rows=4, 
+        rows=10, 
         cols=10, 
         initial_neuron_concentrations=initial_neuron_concentrations,
         base_neuron_params=base_neuron_parameters,
@@ -638,7 +639,7 @@ if __name__ == "__main__":
     
     # Simulation
     h.dt = 0.1
-    visualization_interval = 100.0
+    
     
     print(f"\n🔬 Starting BDNF-Driven Simulation...")
     print("=" * 60)

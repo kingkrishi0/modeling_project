@@ -135,11 +135,11 @@ class ODENeuron(Cell):
     
     def get_params(self) -> dict:
         param_names = [
-            "ksP", "k_cleave", "k_p75_pro_on", "k_p75_pro_off", "k_degP", "k_TrkB_pro_on", "k_TrkB_pro_off",
+            "g_leak", "e_leak", "v_threshold_spike", "ksP", "k_cleave", "k_p75_pro_on", "k_p75_pro_off", "k_degP", "k_TrkB_pro_on", "k_TrkB_pro_off",
             "k_TrkB_B_on", "k_TrkB_B_off", "k_degB", "k_p75_B_on", "k_p75_B_off", "k_degR1", "k_degR2",
             "k_int_p75_pro", "k_int_p75_B", "k_int_TrkB_B", "k_int_TrkB_pro", "aff_p75_pro",
             "aff_p75_B", "aff_TrkB_pro", "aff_TrkB_B", "k_deg_tPA", "ks_tPA", "ks_p75", "ks_TrkB",
-            "tau_activity", "activity_gain", "g_leak", "e_leak", "v_threshold_spike"
+            "tau_activity", "activity_gain"
         ]
         
         param_dict = {}

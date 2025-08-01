@@ -57,7 +57,7 @@ NET_RECEIVE(w) {
     random_num = scop_random()
 
     : Calculate probability of transmission based on synaptic weight
-    prob_threshold = event_weight * prob_factor * 2 
+    prob_threshold = event_weight *prob_fac tor * 2 
     if (prob_threshold > 1.0) {
         prob_threshold = 1.0
     }
