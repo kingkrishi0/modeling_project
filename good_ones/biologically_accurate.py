@@ -186,31 +186,35 @@ class MinimalBiologicalNetwork:
 
     def _initialize_activity_patterns(self):
         """Initialize different activity patterns across the network"""
-        # Add external stimulation to create activity gradients
-        # This drives the BDNF differentiation
+        # Store stimulation info for repeated activation
+        self.stim_objects = []
         
-        # Stimulate Layer 4 neurons (input layer)
+        # Stimulate Layer 4 neurons (input layer) - REPEATEDLY
         for c in range(self.cols):
             if self.rows > 2:  # Make sure Layer 4 exists
                 layer4_neuron = self.neurons[2][c]  # Layer 4 = row 2
-                # Varied stimulation to create activity differences
                 stim_strength = 0.5 + 0.3 * np.sin(c * np.pi / self.cols)
-                delay = 10 + c * 5  # Staggered timing
-                layer4_neuron.add_external_current_stim(
-                    delay=delay, dur=100, amp=stim_strength
-                )
+                
+                # Create multiple stimulations every 5000ms
+                for stim_cycle in range(0, 20):  # 20 cycles = 100,000ms coverage
+                    delay = 10 + c * 5 + stim_cycle * 5000  # Every 5000ms
+                    layer4_neuron.add_external_current_stim(
+                        delay=delay, dur=100, amp=stim_strength
+                    )
         
-        # Add some background stimulation to other layers
+        # Add periodic background stimulation to other layers
         for r in range(self.rows):
             for c in range(self.cols):
                 if r != 2:  # Not Layer 4
                     neuron = self.neurons[r][c]
-                    # Weaker background stimulation
                     stim_strength = 0.1 + 0.1 * np.random.random()
-                    delay = 50 + np.random.randint(0, 400)
-                    neuron.add_external_current_stim(
-                        delay=delay, dur=200, amp=stim_strength
-                    )
+                    
+                    # Multiple background stimulations
+                    for stim_cycle in range(0, 20):
+                        delay = 50 + np.random.randint(0, 400) + stim_cycle * 5000
+                        neuron.add_external_current_stim(
+                            delay=delay, dur=200, amp=stim_strength
+                        )
     
     def _get_neuron_at_grid_pos(self, r: int, c: int):
         if 0 <= r < self.rows and 0 <= c < self.cols:
@@ -556,8 +560,8 @@ if __name__ == "__main__":
         0.0001, #g_leak
         -65.0, #e_leak
         -20.0, #v_threshold_spike
-        5.0e-3, # ksP
-        0.0015, # k_cleave
+        2.0e-3, # ksP
+        0.008, # k_cleave
         1.0, # k_p75_pro_on
         0.9, # k_p75_pro_off
         5.0e-4, # k_degP
@@ -598,7 +602,7 @@ if __name__ == "__main__":
         learning_rate=0.005,
         min_weight=0.01,
         max_weight=1.0,
-        prune_threshold=0.1
+        prune_threshold=0.05
     )
     
     # Comprehensive simulation with your existing framework
@@ -609,9 +613,9 @@ if __name__ == "__main__":
     
     # Simulation
     h.dt = 0.1
-    simulation_time = 100000.0
+    simulation_time = 20000.0
     plasticity_interval = 10.0
-    visualization_interval = 10000.0
+    visualization_interval = 2000.0
     
     print(f"\n🔬 Starting BDNF-Driven Simulation...")
     print("=" * 60)

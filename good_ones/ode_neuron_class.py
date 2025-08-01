@@ -198,7 +198,7 @@ if __name__ == "__main__":
         0.1, #/s)   : proBDNF unbinding from TrkB
         1.0, #MS)    : BDNF binding to TrkB
         0.9, #/s)    : BDNF unbinding from TrkB
-        0.005, #/s)    : BDNF degradation
+        0.05, #/s)    : BDNF degradation
         0.3, #MS)    : BDNF binding to p75
         0.1, #/s)   : BDNF unbinding from p75
         0.0001, #/s)   : p75 degradation
