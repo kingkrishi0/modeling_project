@@ -970,7 +970,7 @@ if __name__ == "__main__":
     print("🎯 Fine-grained analysis between ratios 1:6 and 1:8 to find precise tipping point")
     
     # Test ratios for precise tipping point discovery between 1:6 and 1:8
-    target_ratios = [7.25, 7.30, 7.35, 7.40, 7.45, 7.5]
+    target_ratios = [7.45, 7.46, 7.47, 7.48, 7.49, 7.50,]
     
     # Summary results
     summary_results = []
