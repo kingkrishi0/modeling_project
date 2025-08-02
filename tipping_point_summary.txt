@@ -1,0 +1,19 @@
+BDNF:proBDNF Tipping Point Analysis Summary
+============================================================
+
+Ratio    Survival%    50% Loss        Catastrophic    Recovery  
+------------------------------------------------------------
+1:4.2    94.2         No 50% loss     No catastrophic failure 0         
+1:4.4    98.9         No 50% loss     No catastrophic failure 0         
+1:4.6    99.4         No 50% loss     No catastrophic failure 0         
+1:4.8    87.0         No 50% loss     No catastrophic failure 0         
+1:5.0    79.5         No 50% loss     No catastrophic failure 0         
+1:5.2    77.5         No 50% loss     No catastrophic failure 0         
+1:5.4    76.5         No 50% loss     No catastrophic failure 0         
+1:5.6    75.9         No 50% loss     No catastrophic failure 0         
+1:5.8    72.6         No 50% loss     No catastrophic failure 0         
+1:6.0    75.9         No 50% loss     No catastrophic failure 0         
+1:6.2    75.4         No 50% loss     No catastrophic failure 0         
+1:6.4    78.5         No 50% loss     No catastrophic failure 0         
+1:6.6    76.2         No 50% loss     No catastrophic failure 0         
+1:6.8    75.6         No 50% loss     No catastrophic failure 0         

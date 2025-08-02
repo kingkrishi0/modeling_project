@@ -5,18 +5,12 @@ import pandas as pd
 from scipy.stats import pearsonr, spearmanr
 import seaborn as sns
 
-# Data
-connection_survival = [0.076, 0.746, 0.782, 0.763, 0.620, 0.546, 0.465, 0.347, 0.331, 0.215, 0.241, 0.239, 0.233, 0.218]
-ratio = [3, 4, 6, 7, 7.2, 7.3, 7.4, 7.49, 7.5, 8, 10, 12, 15, 20]
-
-# Convert to numpy arrays for easier manipulation
-x = np.array(ratio)
+connection_survival = [0.076, 0.201, 0.187, 0.512, 0.443, 0.746, 0.942, 0.989, 0.994, 0.870, 0.795, 0.775, 0.765, 0.759, 0.754, 0.785, 0.762, 0.756, 0.726, 0.782, 0.763, 0.620, 0.546, 0.465, 0.347, 0.331, 0.394, 0.231, 0.215, 0.245, 0.256, 0.220, 0.241, 0.251, 0.225, 0.281, 0.239, 0.261, 0.250,  0.233, 0.218]
+ratio = [3, 3.2, 3.4, 3.6, 3.8, 4, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6, 5.8, 6, 6.2, 6.4, 6.6, 6.8, 7, 7.2, 7.3, 7.4, 7.49, 7.5, 7.6, 7.8, 8, 8.5, 9.0, 9.5, 10, 10.5, 11, 11.5, 12, 12.5, 13,  15, 20]
+x = np.array(ratio)  
 y = np.array(connection_survival)
 
-# Create the main visualization
 plt.figure(figsize=(12, 8))
-
-# Main plot with enhanced styling
 plt.subplot(2, 2, (1, 2))
 plt.plot(x, y, 'o-', color='#2E86AB', linewidth=2.5, markersize=8, 
          markerfacecolor='#A23B72', markeredgecolor='white', markeredgewidth=1.5,

@@ -5,15 +5,10 @@ import pandas as pd
 from scipy.stats import pearsonr, spearmanr
 import seaborn as sns
 
-# Data
-connection_survival = [0.076, 0.746, 0.782, 0.763, 0.620, 0.546, 0.465, 0.347, 0.331, 0.215, 0.241, 0.239, 0.233, 0.218]
-ratio = [3, 4, 6, 7, 7.2, 7.3, 7.4, 7.49, 7.5, 8, 10, 12, 15, 20]
-
-# Convert to numpy arrays for easier manipulation
+connection_survival = [0.076, 0.201, 0.187, 0.512, 0.443, 0.746, 0.942, 0.989, 0.994, 0.870, 0.795, 0.775, 0.765, 0.759, 0.754, 0.785, 0.762, 0.756, 0.726, 0.782, 0.763, 0.620, 0.546, 0.465, 0.347, 0.331, 0.394, 0.231, 0.215, 0.245, 0.256, 0.220, 0.241, 0.251, 0.225, 0.281, 0.239, 0.261, 0.250,  0.233, 0.218]
+ratio = [3, 3.2, 3.4, 3.6, 3.8, 4, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6, 5.8, 6, 6.2, 6.4, 6.6, 6.8, 7, 7.2, 7.3, 7.4, 7.49, 7.5, 7.6, 7.8, 8, 8.5, 9.0, 9.5, 10, 10.5, 11, 11.5, 12, 12.5, 13,  15, 20]
 x = np.array(ratio)
 y = np.array(connection_survival)
-
-# Statistical calculations
 pearson_corr, pearson_p = pearsonr(x, y)
 spearman_corr, spearman_p = spearmanr(x, y)
 slope, intercept, r_value, p_value_reg, std_err = stats.linregress(x, y)
@@ -90,7 +85,6 @@ ax1.plot(x, y, 'o-', color='#2E86AB', linewidth=2.5, markersize=8,
 z = np.polyfit(x, y, 2)  # 2nd degree polynomial fit
 p = np.poly1d(z)
 x_smooth = np.linspace(x.min(), x.max(), 100)
-ax1.plot(x_smooth, p(x_smooth), '--', color='#F18F01', linewidth=2, alpha=0.8, label='Polynomial Trend')
 
 # Add linear regression line
 ax1.plot(x, predicted_linear, ':', color='green', linewidth=2, alpha=0.8, label='Linear Fit')
@@ -146,9 +140,11 @@ stats_box_text = f'Linear Residual Std: {residual_std_linear:.3f}\n'
 if best_predicted is not None:
     stats_box_text += f'Piecewise Residual Std: {residual_std_piecewise:.3f}'
 
-ax2.text(0.05, 0.95, stats_box_text, transform=ax2.transAxes, 
-         bbox=dict(boxstyle="round,pad=0.3", facecolor='lightblue', alpha=0.7),
-         fontsize=9, verticalalignment='top')
+ax2.text(
+    0.5, 0.95, stats_box_text, transform=ax2.transAxes,
+    bbox=dict(boxstyle="round,pad=0.3", facecolor='lightblue', alpha=0.7),
+    fontsize=9, verticalalignment='top', horizontalalignment='center'
+)
 
 # Bottom - Statistical summary text
 ax3 = fig.add_subplot(gs[2, :])

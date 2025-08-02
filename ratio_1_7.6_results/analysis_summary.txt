@@ -1,0 +1,22 @@
+BDNF:proBDNF Ratio Analysis - 1:7.6
+==================================================
+
+Parameters Used:
+  k_degB: 0.022725
+  ksP: 0.002757
+  k_cleave: 0.005443
+
+Key Metrics:
+  Initial Connections: 165
+  Final Connections: 65
+  Connection Survival: 39.4%
+  50% Connection Loss Time: 21500ms
+  Catastrophic Failure Time: No catastrophic failure
+  Recovery Potential: 0 connections
+
+Final proBDNF:BDNF Ratio: 6.52
+
+Network Visualizations Saved:
+  • Initial state: network_initial_t1000ms.png
+  • Middle state: network_middle_t20000ms.png
+  • Final state: network_final_t29900ms.png
