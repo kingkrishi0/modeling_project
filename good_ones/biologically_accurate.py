@@ -228,7 +228,7 @@ class MinimalBiologicalNetwork:
         
         # Simple distance constraint
         distance = np.sqrt((pre_r - post_r)**2 + (pre_c - post_c)**2)
-        if distance > 1.5 or np.random.random() > np.exp(-distance / 1.5):
+        if distance > 2 or np.random.random() > np.exp(-distance / 2):
             return False
         
         try:
@@ -350,12 +350,12 @@ class MinimalBiologicalNetwork:
             if pre_signal >= -0.14 and post_signal >= -0.14:
                 # Both neurons have high BDNF - strengthen synapse (LTP-like)
                 weight_change = self.learning_rate * max(pre_growth, post_growth)
-            elif pre_signal < -0.25 and post_signal < -0.25:
+            elif pre_signal < -0.23 and post_signal < -0.23:
                 # High proBDNF/p75 signaling - weaken synapse (LTD-like)
                 weight_change = -self.learning_rate * max(pre_apop, post_apop)
             else:
                 # Maintenance level - slight decay without BDNF support
-                weight_change = -self.learning_rate * 0.147
+                weight_change = -self.learning_rate * 0.149
             
             new_weight = current_weight + weight_change
             new_weight = max(self.min_weight, min(self.max_weight, new_weight))
