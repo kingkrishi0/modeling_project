@@ -100,11 +100,11 @@ class MinimalBiologicalNetwork:
     def _calculate_activity_sensitivity(self, layer_info, cell_size):
         
         layer_sensitivity = {
-            "Layer1": 0.9,    # Horizontal cells - moderate sensitivity
+            "Layer1": 1.04,    # Horizontal cells - moderate sensitivity
             "Layer2/3": 1.1,  # Small pyramids - high sensitivity
-            "Layer4": 1.3,    # Input layer - highest sensitivity
-            "Layer5": 1.0,    # Large pyramids - moderate sensitivity
-            "Layer6": 0.94     # Feedback layer - lower sensitivity
+            "Layer4": 1.11,    # Input layer - highest sensitivity
+            "Layer5": 1.03,    # Large pyramids - moderate sensitivity
+            "Layer6": 0.98     # Feedback layer - lower sensitivity
         }
         
         base_sensitivity = layer_sensitivity[layer_info["name"]]
@@ -125,6 +125,7 @@ class MinimalBiologicalNetwork:
         ks_p75_idx = 24      # p75 synthesis
         ks_TrkB_idx = 25     # TrkB synthesis
         activity_gain_idx = 27  # Activity gain parameter
+        k_cleave_idx = 4  # Cleavage rate
         
         # 1. CELL SIZE EFFECTS (bigger cells need more BDNF but cost more ATP)
         if cell_size > 1.5:  # Large pyramidal neurons (Layer 5)
@@ -145,6 +146,7 @@ class MinimalBiologicalNetwork:
             # Input layer - optimized for activity-dependent BDNF
             params[activity_gain_idx] *= activity_sensitivity
             params[ks_tPA_idx] *= 1.3  # Better BDNF processing
+            #params[k_cleave_idx] *= 1.2  # More efficient cleavage
             
         elif layer_info["name"] == "Layer5":
             # Output layer - high baseline but vulnerable to activity loss
@@ -226,7 +228,7 @@ class MinimalBiologicalNetwork:
         
         # Simple distance constraint
         distance = np.sqrt((pre_r - post_r)**2 + (pre_c - post_c)**2)
-        if distance > 2 or np.random.random() > np.exp(-distance / 2.0):
+        if distance > 1.5 or np.random.random() > np.exp(-distance / 1.5):
             return False
         
         try:
@@ -345,7 +347,7 @@ class MinimalBiologicalNetwork:
             # High growth_strength = high BDNF = strengthen synapses
             # High apop_strength = high proBDNF = weaken synapses
             
-            if pre_signal > -0.14 and post_signal > -0.14:
+            if pre_signal >= -0.14 and post_signal >= -0.14:
                 # Both neurons have high BDNF - strengthen synapse (LTP-like)
                 weight_change = self.learning_rate * max(pre_growth, post_growth)
             elif pre_signal < -0.25 and post_signal < -0.25:
@@ -353,7 +355,7 @@ class MinimalBiologicalNetwork:
                 weight_change = -self.learning_rate * max(pre_apop, post_apop)
             else:
                 # Maintenance level - slight decay without BDNF support
-                weight_change = -self.learning_rate * 0.1
+                weight_change = -self.learning_rate * 0.147
             
             new_weight = current_weight + weight_change
             new_weight = max(self.min_weight, min(self.max_weight, new_weight))
@@ -565,7 +567,7 @@ if __name__ == "__main__":
         0.1, # k_TrkB_pro_off
         1.0, # k_TrkB_B_on
         0.9, #` k_TrkB_B_off
-        0.0145, # k_degB
+        0.0145, # k_deg                                 B
         0.3, # k_p75_B_on
         0.1, # k_p75_B_off
         0.0001, # k_degR1
@@ -586,7 +588,7 @@ if __name__ == "__main__":
         0.001 # activity_gain
     ]
     
-    simulation_time = 40000.0
+    simulation_time = 30000.0
     visualization_interval = 1000.0
     plasticity_interval = 10.0
     network = MinimalBiologicalNetwork(
