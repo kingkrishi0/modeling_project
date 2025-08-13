@@ -102,7 +102,7 @@ class MinimalBiologicalNetwork:
         layer_sensitivity = {
             "Layer1": 1.04,    # Horizontal cells - moderate sensitivity
             "Layer2/3": 1.1,  # Small pyramids - high sensitivity
-            "Layer4": 1.11,    # Input layer - highest sensitivity
+            "Layer4": 1.15,    # Input layer - highest sensitivity
             "Layer5": 1.03,    # Large pyramids - moderate sensitivity
             "Layer6": 0.98     # Feedback layer - lower sensitivity
         }

@@ -523,6 +523,52 @@ class BiologicalBDNFNeuron(ODENeuron):
         return self.neuron_state
 
 
+import networkx as nx
+from collections import defaultdict
+
+def calculate_network_metrics(network):
+    """Calculate clustering coefficient and average path length from the network"""
+    # Create NetworkX graph from the network connections
+    G = nx.Graph()
+    
+    # Add nodes (neurons) to the graph
+    for r in range(network.rows):
+        for c in range(network.cols):
+            node_id = f"r{r}c{c}"
+            G.add_node(node_id)
+    
+    # Add edges (active connections) to the graph
+    for conn in network.connections:
+        if not conn['is_pruned']:  # Only count active connections
+            pre_node = f"r{conn['pre_r']}c{conn['pre_c']}"
+            post_node = f"r{conn['post_r']}c{conn['post_c']}"
+            # Use connection weight as edge weight
+            weight = conn['netcon_to_synapse'].weight[0]
+            G.add_edge(pre_node, post_node, weight=weight)
+    
+    # Calculate metrics
+    try:
+        # Clustering coefficient (average across all nodes)
+        clustering_coeff = nx.average_clustering(G)
+        
+        # Average path length (only for connected components)
+        if nx.is_connected(G):
+            avg_path_length = nx.average_shortest_path_length(G)
+        else:
+            # For disconnected graphs, calculate for largest connected component
+            largest_cc = max(nx.connected_components(G), key=len)
+            subgraph = G.subgraph(largest_cc)
+            if len(subgraph) > 1:
+                avg_path_length = nx.average_shortest_path_length(subgraph)
+            else:
+                avg_path_length = 0  # Single node or empty graph
+        
+        return clustering_coeff, avg_path_length
+        
+    except Exception as e:
+        print(f"Warning: Could not calculate network metrics: {e}")
+        return 0.0, 0.0
+
 def test_ratio_tipping_point(target_ratio, base_k_degB=0.0145, base_ksP=2.0e-3, base_k_cleave=0.008):
     """Test a specific BDNF:proBDNF ratio and save results with network visualizations"""
     
@@ -575,8 +621,15 @@ def test_ratio_tipping_point(target_ratio, base_k_degB=0.0145, base_ksP=2.0e-3, 
     health_metrics = []
     initial_connections = len([c for c in network.connections if not c['is_pruned']])
     
+    # Store network metrics at different time points
+    network_metrics_timeline = []
+    
     print(f"📊 Starting simulation with {initial_connections} initial connections...")
     print(f"📸 Will capture network visualizations at: {list(viz_times.values())} ms")
+    
+    # Calculate initial network metrics
+    initial_clustering, initial_path_length = calculate_network_metrics(network)
+    print(f"📈 Initial network metrics: Clustering={initial_clustering:.3f}, Path Length={initial_path_length:.3f}")
     
     while current_time <= 30000.0:  # Fixed simulation time
         h.fadvance()
@@ -592,6 +645,16 @@ def test_ratio_tipping_point(target_ratio, base_k_degB=0.0145, base_ksP=2.0e-3, 
         for viz_name, viz_time in viz_times.items():
             if abs(current_time - viz_time) < 5.0:  # Within 5ms of target time
                 print(f"📸 Capturing {viz_name} network state at t={current_time:.1f}ms")
+                
+                # Calculate network metrics at this timepoint
+                clustering, path_length = calculate_network_metrics(network)
+                network_metrics_timeline.append({
+                    'time': current_time,
+                    'phase': viz_name,
+                    'clustering': clustering,
+                    'path_length': path_length
+                })
+                print(f"📈 {viz_name.title()} metrics: Clustering={clustering:.3f}, Path Length={path_length:.3f}")
                 
                 # Create custom visualization using existing method
                 fig, ax = plt.subplots(1, 1, figsize=(14, 12))
@@ -672,7 +735,8 @@ def test_ratio_tipping_point(target_ratio, base_k_degB=0.0145, base_ksP=2.0e-3, 
                 ax.set_ylim(-1, network.rows * 3)
                 ax.set_aspect('equal')
                 ax.grid(True, alpha=0.3)
-                ax.set_title(f'BDNF Network - Ratio 1:{target_ratio} - {viz_name.title()} State - t={current_time:.1f}ms', 
+                ax.set_title(f'BDNF Network - Ratio 1:{target_ratio} - {viz_name.title()} State - t={current_time:.1f}ms\n'
+                            f'Clustering: {clustering:.3f}, Path Length: {path_length:.3f}', 
                             fontsize=14)
                 ax.set_xlabel('Grid X')
                 ax.set_ylabel('Grid Y')
@@ -710,6 +774,10 @@ def test_ratio_tipping_point(target_ratio, base_k_degB=0.0145, base_ksP=2.0e-3, 
             time_points.append(current_time)
             health_metrics.append(metrics)
     
+    # Calculate final network metrics
+    final_clustering, final_path_length = calculate_network_metrics(network)
+    print(f"📈 Final network metrics: Clustering={final_clustering:.3f}, Path Length={final_path_length:.3f}")
+    
     # Calculate key metrics
     connection_counts = [m['active_connections'] for m in health_metrics]
     final_connections = connection_counts[-1]
@@ -744,7 +812,7 @@ def test_ratio_tipping_point(target_ratio, base_k_degB=0.0145, base_ksP=2.0e-3, 
     else:
         recovery_potential = 0
     
-    # Save results text file
+    # Save results text file with network metrics
     with open(f"{ratio_dir}/analysis_summary.txt", 'w') as f:
         f.write(f"BDNF:proBDNF Ratio Analysis - 1:{target_ratio}\n")
         f.write("=" * 50 + "\n\n")
@@ -752,7 +820,18 @@ def test_ratio_tipping_point(target_ratio, base_k_degB=0.0145, base_ksP=2.0e-3, 
         f.write(f"  k_degB: {k_degB:.6f}\n")
         f.write(f"  ksP: {ksP:.6f}\n")
         f.write(f"  k_cleave: {k_cleave:.6f}\n\n")
-        f.write(f"Key Metrics:\n")
+        f.write(f"Network Topology Metrics:\n")
+        f.write(f"  Initial Clustering Coefficient: {initial_clustering:.4f}\n")
+        f.write(f"  Final Clustering Coefficient: {final_clustering:.4f}\n")
+        f.write(f"  Initial Average Path Length: {initial_path_length:.4f}\n")
+        f.write(f"  Final Average Path Length: {final_path_length:.4f}\n")
+        if initial_path_length > 0:
+            small_world_initial = initial_clustering / initial_path_length
+            f.write(f"  Initial Small-World Coefficient: {small_world_initial:.4f}\n")
+        if final_path_length > 0:
+            small_world_final = final_clustering / final_path_length
+            f.write(f"  Final Small-World Coefficient: {small_world_final:.4f}\n")
+        f.write(f"\nConnection Metrics:\n")
         f.write(f"  Initial Connections: {initial_connections}\n")
         f.write(f"  Final Connections: {final_connections}\n")
         f.write(f"  Connection Survival: {connection_survival:.1f}%\n")
@@ -770,8 +849,14 @@ def test_ratio_tipping_point(target_ratio, base_k_degB=0.0145, base_ksP=2.0e-3, 
         f.write(f"  • Initial state: network_initial_t1000ms.png\n")
         f.write(f"  • Middle state: network_middle_t20000ms.png\n")
         f.write(f"  • Final state: network_final_t29900ms.png\n")
+        
+        # Add detailed network metrics timeline
+        f.write(f"\nNetwork Metrics Timeline:\n")
+        for metric in network_metrics_timeline:
+            f.write(f"  {metric['phase'].title()} (t={metric['time']:.0f}ms): "
+                   f"Clustering={metric['clustering']:.3f}, Path Length={metric['path_length']:.3f}\n")
     
-    # Generate and save analysis plots
+    # Generate and save analysis plots (existing code continues...)
     plt.figure(figsize=(16, 12))
     
     # Plot 1: Connection survival
@@ -835,17 +920,21 @@ def test_ratio_tipping_point(target_ratio, base_k_degB=0.0145, base_ksP=2.0e-3, 
     plt.legend()
     plt.grid(True, alpha=0.3)
     
-    # Plot 5: Ratio evolution
+    # Plot 5: Network topology metrics
     plt.subplot(2, 3, 5)
-    ratio_values = [m['avg_probdnf']/max(m['avg_bdnf'], 0.001) for m in health_metrics]
-    plt.plot(times, ratio_values, 'orange', linewidth=2)
-    plt.axhline(y=target_ratio, color='black', linestyle='--', label=f'Target 1:{target_ratio}')
-    plt.axvline(x=1000, color='green', linestyle=':', alpha=0.5)
-    plt.axvline(x=20000, color='blue', linestyle=':', alpha=0.5)
-    plt.axvline(x=29900, color='red', linestyle=':', alpha=0.5)
-    plt.xlabel('Time (ms)')
-    plt.ylabel('proBDNF:BDNF Ratio')
-    plt.title('Actual Ratio Evolution')
+    phases = ['Initial', 'Middle', 'Final']
+    clustering_values = [initial_clustering] + [m['clustering'] for m in network_metrics_timeline[1:]]
+    path_length_values = [initial_path_length] + [m['path_length'] for m in network_metrics_timeline[1:]]
+    
+    x_pos = np.arange(len(phases))
+    width = 0.35
+    
+    plt.bar(x_pos - width/2, clustering_values, width, label='Clustering Coeff', alpha=0.7)
+    plt.bar(x_pos + width/2, path_length_values, width, label='Avg Path Length', alpha=0.7)
+    plt.xlabel('Network Phase')
+    plt.ylabel('Metric Value')
+    plt.title('Network Topology Evolution')
+    plt.xticks(x_pos)
     plt.legend()
     plt.grid(True, alpha=0.3)
     
@@ -860,8 +949,11 @@ def test_ratio_tipping_point(target_ratio, base_k_degB=0.0145, base_ksP=2.0e-3, 
         final_ratio = health_metrics[-1]['avg_probdnf']/health_metrics[-1]['avg_bdnf']
         plt.text(0.1, 0.4, f"Final Ratio: {final_ratio:.1f}", fontsize=12)
     
-    plt.text(0.1, 0.2, "Network visualizations:", fontsize=10, style='italic')
-    plt.text(0.1, 0.1, "Initial • Middle • Final", fontsize=10, style='italic')
+    plt.text(0.1, 0.3, f"Final Clustering: {final_clustering:.3f}", fontsize=10)
+    plt.text(0.1, 0.2, f"Final Path Length: {final_path_length:.3f}", fontsize=10)
+    if final_path_length > 0:
+        small_world = final_clustering / final_path_length
+        plt.text(0.1, 0.1, f"Small-World Coeff: {small_world:.3f}", fontsize=10)
     
     plt.xlim(0, 1)
     plt.ylim(0, 1)
@@ -873,7 +965,7 @@ def test_ratio_tipping_point(target_ratio, base_k_degB=0.0145, base_ksP=2.0e-3, 
     plt.savefig(f"{ratio_dir}/analysis_plots.png", dpi=300, bbox_inches='tight')
     plt.close()
     
-    # Save data
+    # Save data with network metrics
     import pickle
     analysis_data = {
         'target_ratio': target_ratio,
@@ -884,6 +976,13 @@ def test_ratio_tipping_point(target_ratio, base_k_degB=0.0145, base_ksP=2.0e-3, 
         'time_50_loss': time_50_loss,
         'time_catastrophic': time_catastrophic,
         'recovery_potential': recovery_potential,
+        'network_metrics': {
+            'initial_clustering': initial_clustering,
+            'final_clustering': final_clustering,
+            'initial_path_length': initial_path_length,
+            'final_path_length': final_path_length,
+            'timeline': network_metrics_timeline
+        },
         'visualization_times': {
             'initial': 1000.0,
             'middle': 20000.0, 
@@ -897,11 +996,11 @@ def test_ratio_tipping_point(target_ratio, base_k_degB=0.0145, base_ksP=2.0e-3, 
     print(f"✅ Results saved to {ratio_dir}/")
     print(f"📊 Final metrics: {connection_survival:.1f}% survival, 50% loss at {time_50_loss}")
     print(f"🖼️  Network visualizations saved: initial, middle, and final states")
+    print(f"📈 Network topology: Clustering {initial_clustering:.3f}→{final_clustering:.3f}, "
+          f"Path Length {initial_path_length:.3f}→{final_path_length:.3f}")
     
-    return connection_survival, time_50_loss, time_catastrophic, recovery_potential
+    return connection_survival, time_50_loss, time_catastrophic, recovery_potential, final_clustering, final_path_length
 
-
-# CORRECTED Main execution block
 if __name__ == "__main__":
     print("=== Minimal Biological BDNF Neural Network ===")
     
@@ -970,45 +1069,116 @@ if __name__ == "__main__":
     print("🎯 Fine-grained analysis between ratios 1:6 and 1:8 to find precise tipping point")
     
     # Test ratios for precise tipping point discovery between 1:6 and 1:8
-    target_ratios = [7.6, 7.8, 8.5, 9.0, 9.5, 10.5, 11, 11.5, 12.5, 13, 13.5, 14, 14.5]
-    
-    # Summary results
+    target_ratios = [3, 3.2, 3.4, 3.6, 3.8, 4, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6, 5.8, 6, 6.2, 6.4, 6.6, 6.8, 7, 7.2, 7.3, 7.4, 7.49, 7.5, 7.6, 7.8, 8, 8.5, 9.0, 9.5, 10, 10.5, 11, 11.5, 12, 12.5, 13,  15, 20]
+    # Summary results - now including network topology metrics
     summary_results = []
+    clustering_coefficients = []
+    average_path_lengths = []
+    survival_percentages = []
     
     for ratio in target_ratios:
         print(f"\n🔬 Testing ratio 1:{ratio}...")
-        survival, loss50, catastrophic, recovery = test_ratio_tipping_point(
+        survival, loss50, catastrophic, recovery, clustering, path_length = test_ratio_tipping_point(
             ratio, 
             base_neuron_parameters[12],  # k_degB
             base_neuron_parameters[3],   # ksP  
             base_neuron_parameters[4]    # k_cleave
         )
+        
         summary_results.append({
             'ratio': ratio,
             'survival': survival,
             'loss50': loss50,
             'catastrophic': catastrophic,
-            'recovery': recovery
+            'recovery': recovery,
+            'clustering': clustering,
+            'path_length': path_length
         })
+        
+        # Collect data for advanced analysis
+        clustering_coefficients.append(clustering)
+        average_path_lengths.append(path_length)
+        survival_percentages.append(survival)
     
-    # Create summary comparison
+    # Create summary comparison with network metrics
     with open("tipping_point_summary.txt", 'w') as f:
         f.write("BDNF:proBDNF Tipping Point Analysis Summary\n")
-        f.write("=" * 60 + "\n\n")
-        f.write(f"{'Ratio':<8} {'Survival%':<12} {'50% Loss':<15} {'Catastrophic':<15} {'Recovery':<10}\n")
-        f.write("-" * 60 + "\n")
+        f.write("=" * 80 + "\n\n")
+        f.write(f"{'Ratio':<8} {'Survival%':<12} {'50% Loss':<15} {'Catastrophic':<15} {'Recovery':<10} {'Clustering':<12} {'Path Len':<10}\n")
+        f.write("-" * 80 + "\n")
         
         for result in summary_results:
             f.write(f"1:{result['ratio']:<6} {result['survival']:<12.1f} "
-                   f"{result['loss50']:<15} {result['catastrophic']:<15} {result['recovery']:<10}\n")
+                   f"{result['loss50']:<15} {result['catastrophic']:<15} {result['recovery']:<10} "
+                   f"{result['clustering']:<12.3f} {result['path_length']:<10.3f}\n")
+        
+        # Add network topology analysis
+        f.write(f"\nNetwork Topology Summary:\n")
+        f.write(f"  Clustering Coefficient Range: {min(clustering_coefficients):.3f} - {max(clustering_coefficients):.3f}\n")
+        f.write(f"  Average Path Length Range: {min(average_path_lengths):.3f} - {max(average_path_lengths):.3f}\n")
+        
+        # Calculate small-world coefficients
+        small_world_coeffs = [c/p if p > 0 else 0 for c, p in zip(clustering_coefficients, average_path_lengths)]
+        if small_world_coeffs:
+            f.write(f"  Small-World Coefficient Range: {min(small_world_coeffs):.3f} - {max(small_world_coeffs):.3f}\n")
     
     print(f"\n✅ Tipping point analysis complete!")
     print(f"📁 Check individual ratio folders and tipping_point_summary.txt")
     print(f"🎯 Look for ratios where survival drops below 50% to identify tipping point")
-    print(f"🖼️  Each ratio folder contains:")
-    print(f"   • analysis_plots.png (time series analysis)")
-    print(f"   • network_initial_t1000ms.png (network at 1 second)")
-    print(f"   • network_middle_t20000ms.png (network at 20 seconds)")
-    print(f"   • network_final_t29900ms.png (network near end)")
-    print(f"   • analysis_summary.txt (detailed metrics)")
-    print(f"   • analysis_data.pkl (raw data for further analysis)")
+    print(f"📈 Network topology data collected for advanced analysis")
+    
+    # Now run the advanced tipping point analysis with real network data
+    print(f"\n🔬 Running Advanced Tipping Point Analysis with Real Network Data...")
+    
+    # Import and use the advanced analysis
+    from graphs.advanced_claude_data import AdvancedTippingAnalysis
+    
+    # Convert ratios to the format expected by AdvancedTippingAnalysis
+    ratios_for_analysis = target_ratios
+    
+    # Optional: Add time series data if you want to analyze temporal dynamics
+    # For now, we'll use the basic analysis
+    time_series_data = {}  # Could be populated with temporal data from simulations
+    
+    # Create analyzer with real network data
+    analyzer = AdvancedTippingAnalysis(ratios_for_analysis, survival_percentages, time_series_data)
+    
+    print(f"📊 Running network topology analysis with real data...")
+    
+    # Use the modified network topology analysis with real data
+    real_clustering, real_path_lengths, real_modularity, real_small_world = analyzer.network_topology_analysis(
+        clustering_coeffs=clustering_coefficients,
+        avg_path_lengths=average_path_lengths
+    )
+    
+    print(f"✅ Advanced analysis complete with real network topology data!")
+    
+    # Run other advanced analyses
+    print(f"\n🔬 Running additional advanced analyses...")
+    
+    # Catastrophe theory analysis
+    critical_points, cusp_params, _ = analyzer.catastrophe_theory_analysis()
+    
+    # Phase transition analysis  
+    critical_ratio, critical_exp = analyzer.phase_transition_analysis()
+    
+    # Generate comprehensive report
+    results = analyzer.generate_comprehensive_report()
+    
+    print(f"\n🎯 COMPREHENSIVE ANALYSIS RESULTS:")
+    print(f"=" * 50)
+    print(f"🔍 Consensus tipping point: {results['consensus_tipping_point']:.2f}")
+    print(f"📈 Network topology transitions captured with real data")
+    print(f"📊 Catastrophe theory critical points: {critical_points}")
+    print(f"🌊 Phase transition critical ratio: {critical_ratio:.2f}")
+    
+    print(f"\n🖼️ Generated Files:")
+    print(f"   • Individual ratio analyses in ratio_1_X.X_results/ folders")
+    print(f"   • tipping_point_summary.txt (includes network metrics)")
+    print(f"   • comprehensive_tipping_analysis_report.txt")
+    print(f"   • Various analysis plots and visualizations")
+    
+    print(f"\n✨ Complete Analysis Finished!")
+    print(f"🧬 Real BDNF network topology data successfully integrated into advanced analysis")
+    print(f"📈 Network metrics show how clustering and path length change across tipping point")
+    print(f"🎯 Use these insights to understand network vulnerability patterns")

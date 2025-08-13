@@ -40,10 +40,14 @@ class AdvancedTippingAnalysis:
         popt, pcov = curve_fit(cusp_model, self.ratios, self.survival_rates, 
                               p0=[1, -1, 1, 50], maxfev=5000)
         
+        y_pred = cusp_model(self.ratios, *popt)
+        ss_res = np.sum((self.survival_rates - y_pred) ** 2)
+        ss_tot = np.sum((self.survival_rates - np.mean(self.survival_rates)) ** 2)
+        r2 = 1 - (ss_res / ss_tot)
         # Find critical points (where derivative = 0)
         def cusp_derivative(ratio, a, b, c):
             return 3*a * ratio**2 + 2*b * ratio + c
-        
+    
         # Solve for critical points
         from scipy.optimize import fsolve
         critical_points = []
@@ -72,7 +76,7 @@ class AdvancedTippingAnalysis:
         for cp in critical_points:
             cp_survival = cusp_model(cp, *popt)
             ax1.axvline(cp, color='orange', linestyle='--', alpha=0.8, linewidth=2)
-            ax1.scatter(cp, cp_survival, color='orange', s=200, marker='*', 
+            ax1.scatter(cp, cp_survival, color='orange', s=200, 
                        zorder=6, edgecolors='black', linewidth=2)
             ax1.text(cp, cp_survival + 5, f'Critical\n{cp:.2f}', 
                     ha='center', fontweight='bold', bbox=dict(boxstyle="round,pad=0.3", 
@@ -100,7 +104,10 @@ class AdvancedTippingAnalysis:
         ax2.grid(True, alpha=0.3)
         
         plt.tight_layout()
+        sns.despine()
         plt.show()
+
+        print(f"{r2:.4f}")
         
         return critical_points, popt, pcov
     
@@ -134,11 +141,8 @@ class AdvancedTippingAnalysis:
         # Plot 2: Susceptibility
         ax2.plot(self.ratios, susceptibility, 'ro-', linewidth=3, markersize=8)
         ax2.axvline(critical_ratio, color='red', linestyle='--', linewidth=2)
-        ax2.scatter(critical_ratio, susceptibility[critical_idx], color='yellow', 
-                   s=300, marker='*', edgecolors='black', linewidth=2, zorder=5)
         ax2.set_xlabel('pBDNF/mBDNF Ratio')
         ax2.set_ylabel('Susceptibility\n(Rate of Change)')
-        ax2.set_title('Critical Point Detection: Maximum Susceptibility', fontweight='bold')
         ax2.grid(True, alpha=0.3)
         
         # Plot 3: Critical exponent analysis
@@ -194,6 +198,7 @@ class AdvancedTippingAnalysis:
         ax4.grid(True, alpha=0.3)
         
         plt.tight_layout()
+        sns.despine()
         plt.show()
         
         return critical_ratio, critical_exponent if 'critical_exponent' in locals() else None
@@ -287,6 +292,7 @@ class AdvancedTippingAnalysis:
             ax_summary.grid(True, alpha=0.3)
         
         plt.tight_layout()
+        sns.despine()
         plt.show()
         
         return warning_metrics
@@ -391,37 +397,63 @@ class AdvancedTippingAnalysis:
         ax4.grid(True, alpha=0.3)
         
         plt.tight_layout()
+        sns.despine()
         plt.show()
         
         return ridge_lines, max_var_scale, entropies
     
-    def network_topology_analysis(self):
+    def network_topology_analysis(self, clustering_coeffs=None, avg_path_lengths=None):
         """
         Analyze the relationship between ratios and network topology changes
+        Now uses real data from network simulations instead of synthetic data
+        
+        Args:
+            clustering_coeffs: List of clustering coefficients corresponding to self.ratios
+            avg_path_lengths: List of average path lengths corresponding to self.ratios
         """
-        # Simulate different network metrics for different ratios
-        # (In real analysis, you'd extract these from your network data)
         
-        np.random.seed(42)  # For reproducible "simulation"
-        
-        # Simulate network metrics that change with ratio
-        clustering_coeff = 0.8 - 0.6 * (self.ratios - self.ratios.min()) / (self.ratios.max() - self.ratios.min())
-        clustering_coeff += np.random.normal(0, 0.05, len(self.ratios))
-        
-        avg_path_length = 2.0 + 2.0 * (self.ratios - self.ratios.min()) / (self.ratios.max() - self.ratios.min())
-        avg_path_length += np.random.normal(0, 0.1, len(self.ratios))
-        
-        modularity = 0.7 - 0.5 * (self.ratios - self.ratios.min()) / (self.ratios.max() - self.ratios.min())
-        modularity += np.random.normal(0, 0.03, len(self.ratios))
+        if clustering_coeffs is None or avg_path_lengths is None:
+            print("Warning: No real network data provided. Using synthetic data for demonstration.")
+            # Fall back to synthetic data generation (original behavior)
+            np.random.seed(42)  # For reproducible "simulation"
+            
+            # Simulate network metrics that change with ratio
+            clustering_coeff = 0.8 - 0.6 * (self.ratios - self.ratios.min()) / (self.ratios.max() - self.ratios.min())
+            clustering_coeff += np.random.normal(0, 0.05, len(self.ratios))
+            
+            avg_path_length = 2.0 + 2.0 * (self.ratios - self.ratios.min()) / (self.ratios.max() - self.ratios.min())
+            avg_path_length += np.random.normal(0, 0.1, len(self.ratios))
+            
+            modularity = 0.7 - 0.5 * (self.ratios - self.ratios.min()) / (self.ratios.max() - self.ratios.min())
+            modularity += np.random.normal(0, 0.03, len(self.ratios))
+            
+        else:
+            # Use real data from network simulations
+            if len(clustering_coeffs) != len(self.ratios) or len(avg_path_lengths) != len(self.ratios):
+                raise ValueError("clustering_coeffs and avg_path_lengths must have same length as ratios")
+            
+            clustering_coeff = np.array(clustering_coeffs)
+            avg_path_length = np.array(avg_path_lengths)
+            
+            # Calculate modularity as a derived metric (since we don't directly measure it)
+            # Estimate modularity based on clustering and path length relationship
+            # Higher clustering + shorter paths suggests higher modularity
+            normalized_clustering = (clustering_coeff - clustering_coeff.min()) / (clustering_coeff.max() - clustering_coeff.min() + 1e-8)
+            normalized_inv_path = 1.0 / (avg_path_length + 1e-8)
+            normalized_inv_path = (normalized_inv_path - normalized_inv_path.min()) / (normalized_inv_path.max() - normalized_inv_path.min() + 1e-8)
+            
+            # Modularity estimate: weighted combination of clustering and inverse path length
+            modularity = 0.5 * normalized_clustering + 0.5 * normalized_inv_path
+            modularity = 0.3 + 0.4 * modularity  # Scale to reasonable modularity range [0.3, 0.7]
         
         # Small-world coefficient
-        small_world_coeff = clustering_coeff / avg_path_length
+        small_world_coeff = clustering_coeff / (avg_path_length + 1e-8)  # Avoid division by zero
         
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16, 12))
         
         # Plot 1: Clustering coefficient
         ax1.scatter(self.ratios, clustering_coeff, c=self.survival_rates, 
-                   s=100, cmap='RdYlBu', edgecolors='black')
+                s=100, cmap='RdYlBu', edgecolors='black')
         ax1.set_xlabel('pBDNF/mBDNF Ratio')
         ax1.set_ylabel('Clustering Coefficient')
         ax1.set_title('Network Clustering vs Ratio', fontweight='bold')
@@ -429,9 +461,16 @@ class AdvancedTippingAnalysis:
         cbar1 = plt.colorbar(ax1.collections[0], ax=ax1)
         cbar1.set_label('Survival %')
         
+        # Add trend line for clustering
+        z1 = np.polyfit(self.ratios, clustering_coeff, 2)
+        p1 = np.poly1d(z1)
+        x_smooth = np.linspace(self.ratios.min(), self.ratios.max(), 100)
+        ax1.plot(x_smooth, p1(x_smooth), '--', color='red', linewidth=2, alpha=0.8, label='Trend')
+        ax1.legend()
+        
         # Plot 2: Average path length
         ax2.scatter(self.ratios, avg_path_length, c=self.survival_rates, 
-                   s=100, cmap='RdYlBu', edgecolors='black')
+                s=100, cmap='RdYlBu', edgecolors='black')
         ax2.set_xlabel('pBDNF/mBDNF Ratio')
         ax2.set_ylabel('Average Path Length')
         ax2.set_title('Path Length vs Ratio', fontweight='bold')
@@ -439,9 +478,15 @@ class AdvancedTippingAnalysis:
         cbar2 = plt.colorbar(ax2.collections[0], ax=ax2)
         cbar2.set_label('Survival %')
         
+        # Add trend line for path length
+        z2 = np.polyfit(self.ratios, avg_path_length, 2)
+        p2 = np.poly1d(z2)
+        ax2.plot(x_smooth, p2(x_smooth), '--', color='red', linewidth=2, alpha=0.8, label='Trend')
+        ax2.legend()
+        
         # Plot 3: Small-world coefficient
         ax3.scatter(self.ratios, small_world_coeff, c=self.survival_rates, 
-                   s=100, cmap='RdYlBu', edgecolors='black')
+                s=100, cmap='RdYlBu', edgecolors='black')
         ax3.axhline(y=1, color='red', linestyle='--', alpha=0.7, label='Random Network')
         ax3.set_xlabel('pBDNF/mBDNF Ratio')
         ax3.set_ylabel('Small-World Coefficient')
@@ -451,9 +496,15 @@ class AdvancedTippingAnalysis:
         cbar3 = plt.colorbar(ax3.collections[0], ax=ax3)
         cbar3.set_label('Survival %')
         
+        # Add trend line for small-world coefficient
+        z3 = np.polyfit(self.ratios, small_world_coeff, 2)
+        p3 = np.poly1d(z3)
+        ax3.plot(x_smooth, p3(x_smooth), '--', color='red', linewidth=2, alpha=0.8, label='Trend')
+        ax3.legend()
+        
         # Plot 4: Network topology phase space
         ax4.scatter(clustering_coeff, avg_path_length, c=self.ratios, 
-                   s=self.survival_rates*2, cmap='viridis', edgecolors='black', alpha=0.7)
+                s=self.survival_rates*2, cmap='viridis', edgecolors='black', alpha=0.7)
         
         # Add trajectory arrows
         for i in range(len(self.ratios)-1):
@@ -468,11 +519,97 @@ class AdvancedTippingAnalysis:
         cbar4 = plt.colorbar(ax4.collections[0], ax=ax4)
         cbar4.set_label('Ratio')
         
+        # Add annotations for different network regimes
+        if len(clustering_coeff) > 0 and len(avg_path_length) > 0:
+            # Identify critical transition points
+            # Find point where clustering drops most dramatically
+            clustering_changes = np.abs(np.diff(clustering_coeff))
+            if len(clustering_changes) > 0:
+                max_clustering_change_idx = np.argmax(clustering_changes)
+                critical_clustering = clustering_coeff[max_clustering_change_idx]
+                critical_path_length = avg_path_length[max_clustering_change_idx]
+                critical_ratio = self.ratios[max_clustering_change_idx]
+                
+                ax4.scatter(critical_clustering, critical_path_length, 
+                        s=300, c='red', marker='*', edgecolors='black', linewidth=2,
+                        label=f'Critical Point (Ratio {critical_ratio:.1f})')
+                ax4.legend()
+        
         plt.tight_layout()
         plt.show()
         
+        # Calculate additional network metrics and correlations
+        print("\n📊 NETWORK TOPOLOGY ANALYSIS RESULTS:")
+        print("=" * 50)
+        
+        # Basic statistics
+        print(f"Clustering Coefficient:")
+        print(f"  Range: {clustering_coeff.min():.3f} - {clustering_coeff.max():.3f}")
+        print(f"  Mean: {clustering_coeff.mean():.3f} ± {clustering_coeff.std():.3f}")
+        
+        print(f"\nAverage Path Length:")
+        print(f"  Range: {avg_path_length.min():.3f} - {avg_path_length.max():.3f}")
+        print(f"  Mean: {avg_path_length.mean():.3f} ± {avg_path_length.std():.3f}")
+        
+        print(f"\nSmall-World Coefficient:")
+        print(f"  Range: {small_world_coeff.min():.3f} - {small_world_coeff.max():.3f}")
+        print(f"  Mean: {small_world_coeff.mean():.3f} ± {small_world_coeff.std():.3f}")
+        
+        # Correlations with survival rates
+        from scipy.stats import pearsonr, spearmanr
+        
+        clustering_corr, clustering_p = pearsonr(clustering_coeff, self.survival_rates)
+        path_corr, path_p = pearsonr(avg_path_length, self.survival_rates)
+        small_world_corr, small_world_p = pearsonr(small_world_coeff, self.survival_rates)
+        
+        print(f"\nCorrelations with Connection Survival:")
+        print(f"  Clustering Coefficient: r = {clustering_corr:.3f}, p = {clustering_p:.4f}")
+        print(f"  Average Path Length: r = {path_corr:.3f}, p = {path_p:.4f}")
+        print(f"  Small-World Coefficient: r = {small_world_corr:.3f}, p = {small_world_p:.4f}")
+        
+        # Network regime classification
+        print(f"\nNetwork Regime Analysis:")
+        
+        # Small-world networks typically have SW coefficient > 1
+        small_world_ratios = self.ratios[small_world_coeff > 1.0]
+        if len(small_world_ratios) > 0:
+            print(f"  Small-World Behavior: Ratios {small_world_ratios.min():.1f} - {small_world_ratios.max():.1f}")
+        else:
+            print(f"  Small-World Behavior: None detected")
+        
+        # High clustering networks
+        high_clustering_threshold = clustering_coeff.mean() + clustering_coeff.std()
+        high_clustering_ratios = self.ratios[clustering_coeff > high_clustering_threshold]
+        if len(high_clustering_ratios) > 0:
+            print(f"  High Clustering: Ratios {high_clustering_ratios.min():.1f} - {high_clustering_ratios.max():.1f}")
+        
+        # Efficient networks (low path length)
+        low_path_threshold = avg_path_length.mean() - avg_path_length.std()
+        efficient_ratios = self.ratios[avg_path_length < low_path_threshold]
+        if len(efficient_ratios) > 0:
+            print(f"  Efficient Networks: Ratios {efficient_ratios.min():.1f} - {efficient_ratios.max():.1f}")
+        
+        # Critical transition identification
+        if len(clustering_coeff) > 2:
+            # Find the ratio where network properties change most dramatically
+            clustering_changes = np.abs(np.diff(clustering_coeff))
+            path_changes = np.abs(np.diff(avg_path_length))
+            combined_changes = clustering_changes + path_changes
+            
+            critical_idx = np.argmax(combined_changes)
+            critical_ratio = self.ratios[critical_idx]
+            
+            print(f"\nCritical Network Transition:")
+            print(f"  Most dramatic topology change at ratio: {critical_ratio:.1f}")
+            print(f"  Clustering change: {clustering_changes[critical_idx]:.3f}")
+            print(f"  Path length change: {path_changes[critical_idx]:.3f}")
+            
+            # Check if this aligns with survival rate changes
+            if critical_idx < len(self.survival_rates) - 1:
+                survival_change = abs(self.survival_rates[critical_idx + 1] - self.survival_rates[critical_idx])
+                print(f"  Corresponding survival change: {survival_change:.1f}%")
+        
         return clustering_coeff, avg_path_length, modularity, small_world_coeff
-    
     def machine_learning_classification(self):
         """
         Use ML to classify pre/post tipping point and identify key features
@@ -570,6 +707,7 @@ class AdvancedTippingAnalysis:
         ax4.set_title('Classification: Stable vs Collapsed States', fontweight='bold')
         
         plt.tight_layout()
+        sns.despine()
         plt.show()
         
         # Calculate silhouette score for clustering quality
@@ -662,6 +800,7 @@ class AdvancedTippingAnalysis:
         ax4.grid(True, alpha=0.3)
         
         plt.tight_layout()
+        sns.despine()
         plt.show()
         
         return {
@@ -881,6 +1020,7 @@ class AdvancedTippingAnalysis:
                         f'{hurst:.3f}', ha='center', va='bottom', fontweight='bold')
         
         plt.tight_layout()
+        sns.despine()
         plt.show()
         
         return fractal_results

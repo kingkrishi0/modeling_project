@@ -6,11 +6,19 @@ Parameters Used:
   ksP: 0.001949
   k_cleave: 0.008250
 
-Key Metrics:
-  Initial Connections: 174
-  Final Connections: 77
-  Connection Survival: 44.3%
-  50% Connection Loss Time: 15800ms
+Network Topology Metrics:
+  Initial Clustering Coefficient: 0.4597
+  Final Clustering Coefficient: 0.3601
+  Initial Average Path Length: 2.8846
+  Final Average Path Length: 3.3609
+  Initial Small-World Coefficient: 0.1593
+  Final Small-World Coefficient: 0.1071
+
+Connection Metrics:
+  Initial Connections: 176
+  Final Connections: 82
+  Connection Survival: 46.6%
+  50% Connection Loss Time: 15900ms
   Catastrophic Failure Time: No catastrophic failure
   Recovery Potential: 0 connections
 
@@ -20,3 +28,8 @@ Network Visualizations Saved:
   • Initial state: network_initial_t1000ms.png
   • Middle state: network_middle_t20000ms.png
   • Final state: network_final_t29900ms.png
+
+Network Metrics Timeline:
+  Initial (t=995ms): Clustering=0.460, Path Length=2.885
+  Middle (t=19995ms): Clustering=0.360, Path Length=3.361
+  Final (t=29895ms): Clustering=0.360, Path Length=3.361

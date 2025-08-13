@@ -102,16 +102,16 @@ ax1.axvline(x=x[steepest_drop_idx], color='red', linestyle=':', alpha=0.7,
            label=f'Steepest Drop at Ratio {x[steepest_drop_idx]}')
 
 # Add critical zones
-ax1.axvspan(6, 7, alpha=0.2, color='green', label='Peak Performance Zone')
+ax1.axvspan(5, 7, alpha=0.2, color='green', label='Peak Performance Zone')
 ax1.axvspan(7, 7.5, alpha=0.2, color='orange', label='Critical Transition Zone')
 ax1.axvspan(7.5, 20, alpha=0.2, color='red', label='Post-Collapse Zone')
 
 # Styling
-ax1.set_xlabel('pBDNF/mBDNF Ratio', fontsize=12, fontweight='bold')
-ax1.set_ylabel('Connection Survival', fontsize=12, fontweight='bold')
-ax1.set_title('Connection Survival vs pBDNF/mBDNF Ratio Analysis', fontsize=14, fontweight='bold', pad=20)
+ax1.set_xlabel('pBDNF/mBDNF Ratio', fontsize=14, fontweight='bold')
+ax1.set_ylabel('Connection Survival', fontsize=14, fontweight='bold')
+ax1.set_title('Connection Survival vs pBDNF/mBDNF Ratio Analysis', fontsize=20, fontweight='bold', pad=20)
 ax1.grid(True, alpha=0.3, linestyle='-', linewidth=0.5)
-ax1.legend(framealpha=0.9, fontsize=9, loc='upper right')
+ax1.legend(framealpha=0.9, fontsize=14, loc='upper right')
 
 # Add text annotation for the critical point
 
@@ -130,7 +130,7 @@ ax2.set_xlabel('pBDNF/mBDNF Ratio', fontweight='bold')
 ax2.set_ylabel('Residuals', fontweight='bold')
 ax2.set_title('Residuals Analysis: Linear vs Piecewise Models', fontweight='bold')
 ax2.grid(True, alpha=0.3)
-ax2.legend(fontsize=9)
+ax2.legend(fontsize=16)
 
 # Add residual statistics
 residual_std_linear = np.std(residuals_linear)
@@ -143,33 +143,16 @@ if best_predicted is not None:
 ax2.text(
     0.5, 0.95, stats_box_text, transform=ax2.transAxes,
     bbox=dict(boxstyle="round,pad=0.3", facecolor='lightblue', alpha=0.7),
-    fontsize=9, verticalalignment='top', horizontalalignment='center'
+    fontsize=16, verticalalignment='top', horizontalalignment='center'
 )
 
 # Bottom - Statistical summary text
-ax3 = fig.add_subplot(gs[2, :])
-ax3.axis('off')
-
-# Create comprehensive statistical summary
-piecewise_info = ""
-if best_predicted is not None:
-    piecewise_info = f"Piecewise R² = {best_r2:.3f}, Breakpoint = {best_breakpoint:.1f}, "
-
-stats_text = f"""STATISTICAL ANALYSIS SUMMARY:
-Pearson Correlation: r = {pearson_corr:.3f}, p = {pearson_p:.4f} ({'Significant' if pearson_p < 0.05 else 'Not Significant'})
-Spearman Correlation: ρ = {spearman_corr:.3f}, p = {spearman_p:.4f} ({'Significant' if spearman_p < 0.05 else 'Not Significant'})
-Linear Regression: R² = {r_value**2:.3f}, p = {p_value_reg:.4f}, Slope = {slope:.4f} ± {std_err:.4f}
-{piecewise_info}Improvement = {(best_r2 - r_value**2)*100:.1f}% better fit
-Critical Findings: Peak at Ratio {x[np.argmax(y)]:.1f} ({np.max(y):.3f}), Steepest Drop at {x[steepest_drop_idx]:.2f}, Post-collapse plateau at {np.mean(y[y < 0.3]):.3f}"""
-
-ax3.text(0.5, 0.5, stats_text, transform=ax3.transAxes, fontsize=11,
-         ha='center', va='center', bbox=dict(boxstyle="round,pad=0.5", facecolor='lightgray', alpha=0.8),
-         fontweight='bold')
 
 plt.suptitle('Comprehensive Connection Survival Analysis: pBDNF/mBDNF Ratio Effects', 
-             fontsize=16, fontweight='bold', y=0.98)
+             fontsize=20, fontweight='bold', y=0.98)
 
 plt.tight_layout()
+sns.despine()
 plt.show()
 
 # Print detailed statistical results

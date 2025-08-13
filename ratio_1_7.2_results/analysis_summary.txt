@@ -1,0 +1,35 @@
+BDNF:proBDNF Ratio Analysis - 1:7.2
+==================================================
+
+Parameters Used:
+  k_degB: 0.021881
+  ksP: 0.002683
+  k_cleave: 0.005622
+
+Network Topology Metrics:
+  Initial Clustering Coefficient: 0.4108
+  Final Clustering Coefficient: 0.3185
+  Initial Average Path Length: 2.8154
+  Final Average Path Length: 2.6633
+  Initial Small-World Coefficient: 0.1459
+  Final Small-World Coefficient: 0.1196
+
+Connection Metrics:
+  Initial Connections: 162
+  Final Connections: 112
+  Connection Survival: 69.1%
+  50% Connection Loss Time: No 50% loss
+  Catastrophic Failure Time: No catastrophic failure
+  Recovery Potential: 0 connections
+
+Final proBDNF:BDNF Ratio: 6.09
+
+Network Visualizations Saved:
+  • Initial state: network_initial_t1000ms.png
+  • Middle state: network_middle_t20000ms.png
+  • Final state: network_final_t29900ms.png
+
+Network Metrics Timeline:
+  Initial (t=995ms): Clustering=0.411, Path Length=2.815
+  Middle (t=19995ms): Clustering=0.332, Path Length=2.785
+  Final (t=29895ms): Clustering=0.318, Path Length=2.663
